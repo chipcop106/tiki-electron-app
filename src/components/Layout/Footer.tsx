@@ -1,5 +1,5 @@
 import React from 'react';
-import { Container, Stack, Link, Text } from '@chakra-ui/react';
+import { Container, Stack, Link, Text, Box, Flex } from '@chakra-ui/react';
 
 import './Layout.scss';
 
@@ -12,15 +12,20 @@ export default function Footer() {
       borderTopWidth={1}
       borderStyle="solid"
     >
-      <Stack
+      <Flex
         flexDirection={['column', 'row']}
         alignItems="center"
-        justifyContent="center"
+        justifyContent="space-between"
+        py={2}
+        fontSize="xs"
       >
-        <Stack isInline fontSize="xs">
-          <Text>Hello</Text>
-        </Stack>
-      </Stack>
+        <Box>
+          <Text>Developer by Dat Codero</Text>
+        </Box>
+        <Box mt={0}>
+          <Text mt={0}>Email: vietdat106@gmail.com</Text>
+        </Box>
+      </Flex>
     </Container>
   );
 }

@@ -1,16 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  SimpleGrid,
-  Stat,
-  StatLabel,
-  StatNumber,
-  StatHelpText,
-  StatArrow,
-  StatGroup,
-  Stack,
-  Text,
   Flex,
-  Icon,
   Badge,
   Box,
   Accordion,
@@ -20,92 +10,266 @@ import {
   AccordionPanel,
   HStack,
   StackDivider,
+  Button,
+  Heading,
+  Stack,
+  Divider,
+  Input,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
+  Table,
+  Thead,
+  Tr,
+  Th,
+  Tbody,
+  Td,
+  Text,
+  Select,
+  FormControl,
+  Switch,
+  FormLabel,
+  Tooltip,
 } from '@chakra-ui/react';
 import { FaChevronUp, FaChevronDown } from 'react-icons/fa';
-import fromUnixTime from 'date-fns/fromUnixTime';
+import { fromUnixTime, differenceInMinutes } from 'date-fns';
+import { shallowEqual, useSelector, useDispatch } from 'react-redux';
 import {
-  PageContainer,
-  PageContent,
-  Nav,
-  Footer,
-  Card,
-} from '../../../components/Layout';
+  AiOutlineDelete,
+  AiOutlineDrag,
+  AiOutlineExpandAlt,
+  AiOutlineFileAdd,
+} from 'react-icons/ai';
+import { PageContainer, Nav, Footer } from '../../../components/Layout';
 import UserCard from '../../../components/UserCard/UserCard';
+import { actions } from './dashboardSlice';
+import { actions as AccountActions } from '../account/accountSlice';
 import './index.scss';
-
-const accounts = [
-  {
-    id: '1',
-    email: 'vietdat106@gmail.com',
-    password: '42342343',
-    token: 'gdfgdflgdfjjl3l4234ljkl4324234',
-    expired: 32325622432234,
-    isLogin: false,
-    productIds: [],
-  },
-  {
-    id: '2',
-    email: 'heaven102@gmail.com',
-    password: 'đf',
-    token: 'gdfgdflgdfjjl3l4234ljkl4324234',
-    expired: 32325622432234,
-    isLogin: true,
-    productIds: [],
-  },
-  {
-    id: '3',
-    email: 'vcnxcmvc@gmail.com',
-    password: '4324234234',
-    token: 'gdfgdflgdfjjl3l4234ljkl4324234',
-    expired: 234234234,
-    isLogin: false,
-    productIds: [],
-  },
-];
+import { RootState } from '../rootReducer';
+import TokenRemain from '../../../components/TokenRemain';
 
 const Dashboard: React.FC = () => {
+  const [collapse, setCollapse] = useState(true);
+  const [collapseItem, setCollapseItem] = useState([]);
+  const [productId, setProductId] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [method, setMethod] = useState('cod');
+  const [gift, setGift] = useState(false);
+  const accounts = useSelector(
+    (state: RootState) => state.account.accounts,
+    shallowEqual
+  );
+  const dispatch = useDispatch();
+
+  const _toggleCollapse = (): void => {
+    if (collapse) {
+      setCollapseItem(accounts.map((value, index: number) => index));
+    } else {
+      setCollapseItem([]);
+    }
+    setCollapse(!collapse);
+  };
+
+  const handleChangeCollapse = (items: never[]): void => {
+    setCollapseItem(items);
+  };
+
+  const handleGiftChange = (e) => {
+    setGift(!e.target.checked);
+  };
+
+  const reloginAllAccount = () => {
+    accounts &&
+      accounts.length > 0 &&
+      [...accounts].map((acc) => {
+        dispatch(
+          AccountActions.loginAccount({
+            id: acc.id,
+            username: acc.username,
+            password: acc.password,
+          })
+        );
+      });
+  };
+
+  const handleChangeProductId = (e) => {
+    setProductId(e.target.value);
+  };
+  const handleChangeMethod = (e) => {
+    setMethod(e.target.value);
+  };
+  const handleChangeQuantity = (
+    valueAsString: string,
+    valueAsNumber: number
+  ) => {
+    setQuantity(valueAsNumber);
+  };
+
+  const buyMultipleAccount = (e) => {
+    e.preventDefault();
+    accounts &&
+      accounts.length > 0 &&
+      [...accounts]
+        .filter((item) => item.isLogin === true)
+        .map((acc) => {
+          dispatch(
+            AccountActions.processBuyProduct({
+              id: acc.id,
+              access_token: acc.access_token,
+              productId,
+              quantity,
+              payment_method: method,
+              gift,
+            })
+          );
+        });
+  };
+
   return (
-    <PageContainer isFixedNav>
-      <Nav />
-      <Flex flexDirection="column" flexGrow={1} overflow="auto" py={8}>
-        <Box>
-          <Accordion defaultIndex={[0]} allowMultiple>
-            {accounts.map((account) => (
-              <AccordionItem mb={8} borderBottom="1px solid #E2E8F0">
-                <AccordionButton backgroundColor="gray.100">
-                  <Flex
-                    alignItems="center"
-                    flexGrow={1}
-                    justify-content="space-between"
+    <>
+      <Stack direction={['row']} mb={8} justify="space-between">
+        <Button colorScheme="teal" size="sm" onClick={reloginAllAccount}>
+          Đăng nhập tất cả
+        </Button>
+        <Button
+          leftIcon={collapse ? <AiOutlineExpandAlt /> : <AiOutlineDrag />}
+          colorScheme="yellow"
+          onClick={_toggleCollapse}
+          size="sm"
+        >
+          {collapse ? 'Mở tất cả tab' : 'Đóng tất cả tab'}
+        </Button>
+      </Stack>
+
+      <Box>
+        <Heading size="sm">Sản phẩm</Heading>
+        <Stack
+          direction={['column', 'row']}
+          spacing="24px"
+          alignItems="center"
+          justify="space-between"
+        >
+          <form>
+            <Flex alignItems="stretch" my={4}>
+              <Box flexgrow={1}>
+                <Input
+                  placeholder="Nhập product ID"
+                  size="sm"
+                  value={productId}
+                  onChange={handleChangeProductId}
+                />
+              </Box>
+              <Box flexgrow={1} width={150} mx={4}>
+                <NumberInput
+                  size="sm"
+                  value={quantity}
+                  onChange={handleChangeQuantity}
+                  defaultValue={1}
+                  min={1}
+                  allowMouseWheel
+                >
+                  <NumberInputField placeholder="Số lượng" />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper />
+                    <NumberDecrementStepper />
+                  </NumberInputStepper>
+                </NumberInput>
+              </Box>
+              <Box width={150}>
+                <Select size="sm" value={method} onChange={handleChangeMethod}>
+                  <option value="cod">COD</option>
+                  <option value="momo">Momo</option>
+                  <option value="zalo">COD</option>
+                  <option value="zalopay">ZaloPay</option>
+                  <option value="cybersource">Visa / Master card</option>
+                </Select>
+              </Box>
+              <Box mx={4} flexShrink={0}>
+                <FormControl display="flex" alignItems="center">
+                  <FormLabel htmlFor="email-alerts" mb="0" flexShrink={0}>
+                    Nhận kèm quà?
+                  </FormLabel>
+                  <Tooltip
+                    label="Một vài sản phẩm kèm theo nhận quà sẽ không mua được, nên test trước khi setup"
+                    aria-label="A tooltip"
+                    shouldWrapChildren
                   >
-                    <HStack divider={<StackDivider />} flexGrow={1}>
-                      <Box width="80px" textAlign="left">
-                        <Badge colorScheme={account.isLogin ? 'green' : 'red'}>
-                          {account.isLogin ? 'Đăng nhập' : 'Đăng xuất'}
-                        </Badge>
+                    <Switch
+                      id="gift-recieve"
+                      onChange={handleGiftChange}
+                      value={gift}
+                    />
+                  </Tooltip>
+                </FormControl>
+              </Box>
+              <Box>
+                <Button
+                  colorScheme="blue"
+                  size="sm"
+                  onClick={buyMultipleAccount}
+                >
+                  Mua sản phẩm ngay
+                </Button>
+              </Box>
+            </Flex>
+          </form>
+        </Stack>
+      </Box>
+
+      <Box>
+        <Accordion
+          index={collapseItem}
+          onChange={handleChangeCollapse}
+          allowMultiple
+          allowToggle
+        >
+          {accounts.map((account, index) => (
+            <AccordionItem
+              key={`${index}`}
+              mb={6}
+              borderBottom="1px solid #E2E8F0"
+            >
+              <AccordionButton
+                backgroundColor="gray.100"
+                _expanded={{ bg: 'gray.700', color: 'white' }}
+              >
+                <Flex
+                  alignItems="center"
+                  flexGrow={1}
+                  justify-content="space-between"
+                >
+                  <HStack divider={<StackDivider />} flexGrow={1}>
+                    <Box width="80px" textAlign="left">
+                      <Badge
+                        variant="solid"
+                        colorScheme={account.isLogin ? 'green' : 'red'}
+                      >
+                        {account.isLogin ? 'Đăng nhập' : 'Đăng xuất'}
+                      </Badge>
+                    </Box>
+                    <Box flex="1" textAlign="left">
+                      {account.username}
+                    </Box>
+                    {account.isLogin && (
+                      <Box width="250px" textAlign="left">
+                        Token hết hạn sau:{' '}
+                        <TokenRemain time={account.expires_at} id="acb" />
                       </Box>
-                      <Box flex="1" textAlign="left">
-                        {account.email}
-                      </Box>
-                      {account.isLogin && (
-                        <Box width="200px" textAlign="left">
-                          Hết hạn: {account.expired}
-                        </Box>
-                      )}
-                    </HStack>
-                    <AccordionIcon />
-                  </Flex>
-                </AccordionButton>
-                <AccordionPanel pb={4}>
-                  <UserCard data={account} />
-                </AccordionPanel>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </Box>
-      </Flex>
-      <Footer />
-    </PageContainer>
+                    )}
+                  </HStack>
+                  <AccordionIcon />
+                </Flex>
+              </AccordionButton>
+              <AccordionPanel pb={4}>
+                <UserCard data={account} />
+              </AccordionPanel>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      </Box>
+    </>
   );
 };
 

@@ -14,7 +14,9 @@ import path from 'path';
 import { app, BrowserWindow, shell } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
+import Store from 'electron-store';
 import MenuBuilder from './menu';
+import store from './redux/store';
 
 export default class AppUpdater {
   constructor() {
@@ -23,6 +25,8 @@ export default class AppUpdater {
     autoUpdater.checkForUpdatesAndNotify();
   }
 }
+
+const localStorage = new Store();
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -69,11 +73,12 @@ const createWindow = async () => {
 
   mainWindow = new BrowserWindow({
     show: false,
-    width: 768,
+    width: 1024,
     height: 728,
     icon: getAssetPath('icon.png'),
     webPreferences: {
       nodeIntegration: true,
+      preload: path.join(__dirname, 'preload.js'), // use a preload script
     },
   });
 
@@ -94,6 +99,8 @@ const createWindow = async () => {
   });
 
   mainWindow.on('closed', () => {
+    const state = store.getState();
+    localStorage.set('persistedStore', JSON.stringify(state));
     mainWindow = null;
   });
 
