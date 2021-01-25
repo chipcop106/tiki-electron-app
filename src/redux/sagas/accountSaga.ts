@@ -1,7 +1,11 @@
 import { takeEvery, put, takeLatest, select } from 'redux-saga/effects';
 import { v4 as uuidv4 } from 'uuid';
 import { actions as accountActions } from '../features/account/accountSlice';
-import { login, getUserAddress } from '../../api/account';
+import {
+  login,
+  getUserAddress,
+  cancelOrder as cancelOrderById,
+} from '../../api/account';
 import { getProductInfo } from '../../api/product';
 import {
   getCartData,
@@ -103,7 +107,8 @@ export function* updateAccount({ payload }) {
 }
 
 export function* processBuyProduct({ payload }) {
-  console.log({ payload });
+  console.log('Payload processbuy', payload);
+
   // eslint-disable-next-line @typescript-eslint/naming-convention
   const {
     access_token,
@@ -115,6 +120,8 @@ export function* processBuyProduct({ payload }) {
   try {
     const userAddress = yield getUserAddress({ access_token });
     const cartData = yield getCartData({ access_token });
+
+    console.log({ cartData });
     yield addToCart({
       product_id,
       access_token,
@@ -136,7 +143,7 @@ export function* processBuyProduct({ payload }) {
         access_token,
       });
     }
-    yield completeCheckOut({
+    const resCheckout = yield completeCheckOut({
       access_token,
       payment_method,
     });
@@ -145,6 +152,8 @@ export function* processBuyProduct({ payload }) {
       payload: {
         accountId: payload.id,
         id: uuidv4(),
+        orderId:
+          resCheckout?.data?.redirect_data?.order_code ?? 'Không có mã order',
         nameProduct:
           cartData?.data?.items[0]?.product_name ?? 'Không tìm thấy tên',
         productId: product_id,
@@ -173,6 +182,21 @@ export function* processBuyProduct({ payload }) {
   }
 }
 
+export function* cancelOrder({ payload }) {
+  console.log('Payload cancel', payload);
+  try {
+    const res = yield cancelOrderById({
+      access_token: payload.access_token,
+      orderId: payload.orderId,
+    });
+    if (res.data) {
+      yield put({ type: accountActions.cancelOrderSuccess, payload });
+    }
+  } catch (error) {
+    console.log({ error });
+  }
+}
+
 export default [
   function* loginAccountWatcher() {
     yield takeEvery(accountActions.loginAccount.type, loginAccount);
@@ -182,6 +206,9 @@ export default [
   },
   function* updateAccountWatcher() {
     yield takeLatest(accountActions.updateAccount.type, updateAccount);
+  },
+  function* cancelOrderWatcher() {
+    yield takeLatest(accountActions.cancelOrder.type, cancelOrder);
   },
   function* processBuyProductMultiple() {
     yield takeEvery(accountActions.processBuyProduct.type, processBuyProduct);

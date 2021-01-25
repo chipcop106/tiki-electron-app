@@ -25,6 +25,7 @@ const Account = () => {
     (state: RootState) => state.account.accounts,
     shallowEqual
   );
+  console.log({ accounts });
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [modalState, setModalState] = useState({

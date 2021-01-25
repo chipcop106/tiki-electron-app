@@ -24,8 +24,27 @@ export const getUserAddress = async (params: AccessToken) => {
   });
 };
 
+export const cancelOrder = async (params: CancelOrderPayload) => {
+  return instance.post(
+    `me/orders/${params.orderId}/cancel`,
+    {
+      reason_code: '696',
+      reason_detail: 'Đặt nhầm số lượng',
+    },
+    {
+      headers: {
+        'x-access-token': params.access_token,
+      },
+    }
+  );
+};
+
 interface AccessToken {
   access_token: string;
+}
+
+interface CancelOrderPayload extends AccessToken {
+  orderId: string;
 }
 
 interface LoginPayload {

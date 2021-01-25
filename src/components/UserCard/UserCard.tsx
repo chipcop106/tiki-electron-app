@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React from 'react';
 import {
   Box,
   Text,
@@ -65,9 +65,8 @@ const UserCard = ({
     dispatch(actions.deleteHistories(id));
   };
 
-  const submitForm = (e) => {
-    e.preventDefault();
-    alert('haha');
+  const handleCancelOrder = (id, access_token, orderId) => {
+    dispatch(actions.cancelOrder({ id, access_token, orderId }));
   };
 
   return (
@@ -188,6 +187,7 @@ const UserCard = ({
                 <Th>Link</Th>
                 <Th>SL Mua</Th>
                 <Th>Trạng thái</Th>
+                <Th />
               </Tr>
             </Thead>
             <Tbody>
@@ -204,11 +204,25 @@ const UserCard = ({
                         <Badge colorScheme="red">Thất bại</Badge>
                       )}
                     </Td>
+                    <Td>
+                      {item.status && (
+                        <Button
+                          size="xs"
+                          colorScheme="red"
+                          variant="ghost"
+                          onClick={() =>
+                            handleCancelOrder(id, access_token, item.orderId)
+                          }
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                    </Td>
                   </Tr>
                 ))
               ) : (
                 <Tr>
-                  <Td colSpan={4}>
+                  <Td colSpan={5}>
                     <Text color="red.600" textAlign="center">
                       Chưa có lịch sử nào
                     </Text>
@@ -223,4 +237,4 @@ const UserCard = ({
   );
 };
 
-export default memo(UserCard);
+export default UserCard;

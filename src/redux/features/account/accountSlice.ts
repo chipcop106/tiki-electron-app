@@ -8,6 +8,7 @@ interface History {
   quantity: number;
   status: boolean;
   error: string | null;
+  orderId: string | number | null;
 }
 
 interface Account {
@@ -214,6 +215,20 @@ export const accountSlice = createSlice({
       state.accounts = [...state.accounts].map((account: Account) => {
         if (account.id === payload) {
           account.histories = [];
+        }
+        return account;
+      });
+    },
+    cancelOrder: (state, { payload }) => {},
+    cancelOrderSuccess: (state, { payload }) => {
+      state.accounts = [...state.accounts].map((account: Account) => {
+        if (account.id === payload.id) {
+          account.histories = account.histories.map((item) => {
+            if (item.orderId === payload.orderId) {
+              item.status = false;
+            }
+            return item;
+          });
         }
         return account;
       });

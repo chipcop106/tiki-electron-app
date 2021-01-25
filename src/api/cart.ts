@@ -8,7 +8,8 @@ export const getCartData = async (params: AccessToken) => {
       'x-access-token': params.access_token,
     },
     params: {
-      include: 'items',
+      include:
+        'items,badges,messages,price_summary,eligible_coupon,shipping_address',
       platform: 'web',
     },
   });
