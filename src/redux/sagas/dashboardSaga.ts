@@ -13,7 +13,5 @@ export function* fetchUserInformation({ payload }) {
 }
 
 export default [
-  function* fetchUserInformationWatcher() {
-    yield takeEvery(dashboardActions.increment.type, fetchUserInformation);
-  },
+
 ];

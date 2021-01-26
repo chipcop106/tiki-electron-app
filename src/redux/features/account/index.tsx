@@ -89,7 +89,7 @@ const Account = () => {
 
   return (
     <>
-      <Table variant="striped" colorScheme="gray">
+      <Table variant="striped" colorScheme="gray" size={`sm`}>
         <TableCaption placement="top">Danh sách tài khoản</TableCaption>
         <Thead>
           <Tr>

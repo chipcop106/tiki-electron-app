@@ -1,6 +1,5 @@
-import { takeEvery, put, takeLatest, select, call } from 'redux-saga/effects';
+import { takeEvery, put, takeLatest, select, call, take } from 'redux-saga/effects';
 import { v4 as uuidv4 } from 'uuid';
-import alertify from 'alertifyjs';
 import { actions as accountActions } from '../features/account/accountSlice';
 import {
   login,
@@ -18,6 +17,8 @@ import {
   completeCheckOut,
   deleteCart,
 } from '../../api/cart';
+
+const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
 export function* loginAccount({ payload }) {
   try {
@@ -181,6 +182,47 @@ export function* processBuyProduct({ payload }) {
   }
 }
 
+export function* processBuyCart({ payload }) {
+  try {
+    const { access_token, id, method: payment_method, gift } = payload;
+    const userAddress = yield call(getUserAddress, { access_token });
+    const cartData = yield call(getCartData, { access_token });
+    yield call(setAddress, {
+      access_token,
+      address_id: userAddress.data.data.find(
+        (item: any) => item.is_default === true
+      ).id,
+    });
+    yield call(setPaymentMethod, {
+      access_token,
+      payment_method,
+      gift,
+    });
+
+    if (gift) {
+      yield call(setGiftNone, {
+        access_token,
+      });
+    }
+    yield call(completeCheckOut, {
+      access_token,
+      payment_method,
+    });
+    yield put({
+      type: accountActions.checkPriceBuySuccess,
+      payload: {
+        ...payload,
+      },
+    });
+  } catch (error) {
+    yield put({
+      type: accountActions.checkPriceBuyFailed,
+      payload:
+        error.response.error.message ?? 'Lỗi mua hàng không thành công !!',
+    });
+  }
+}
+
 export function* cancelOrder({ payload }) {
   try {
     const res = yield call(cancelOrderById, {
@@ -200,12 +242,22 @@ export function* getCart({ payload }) {
   try {
     const cartData = yield call(getCartData, { access_token });
     if (cartData.data) {
+      const {items, subtotal} = cartData.data;
+      const newItems = items.map(item => ({
+        id: item.id,
+        subtotal: item.subtotal,
+        price: item.price,
+        product_id: item.product_id,
+        product_name: item.product_name,
+        product_url: item.product_url,
+        qty: item.qty,
+      }));
       yield put({
         type: accountActions.getCartSuccess,
         payload: {
           id,
-          cartItems: JSON.stringify(cartData.data.items),
-          subTotal: cartData.data.subtotal,
+          cartItems: JSON.stringify(newItems),
+          subTotal: subtotal,
         },
       });
     }
@@ -220,20 +272,56 @@ export function* getCart({ payload }) {
 export function* deleteCartItem({ payload }) {
   const { access_token, id, itemId } = payload;
   try {
+    yield delay(1000);
     const res = yield call(deleteCart, { access_token, itemId });
     if (res.status === 204) {
-      alertify.notify('Đã xóa thành công', 'success');
       yield put({
         type: accountActions.deleteCartItemSuccess,
-        payload: {
-          ...payload,
-        },
+        payload,
       });
     }
   } catch (error) {
     yield put({
       type: accountActions.deleteCartItemFailed,
-      payload: error.response.error.message ?? 'Lỗi khi lấy dữ liệu cart',
+      payload: error?.response?.error?.message ?? 'Lỗi khi lấy dữ liệu cart',
+    });
+  }
+}
+
+export function* addCartProduct({ payload }) {
+  try {
+    const { product_id, quantity, access_token, id } = payload;
+    yield call(addToCart, {
+      product_id,
+      access_token,
+      quantity: quantity.toString(),
+    });
+
+    const cartData = yield call(getCartData, { access_token });
+
+    const newItem = cartData.data.find(
+      (item) => item.product_id === product_id
+    );
+    yield put({
+      type: accountActions.addCartProductSuccess,
+      payload: {
+        ...payload,
+        item: {
+          id: newItem.id,
+          subtotal: newItem.subtotal,
+          price: newItem.price,
+          product_id: newItem.product_id,
+          product_name: newItem.product_name,
+          product_url: newItem.product_url,
+          qty: newItem.qty,
+        },
+      },
+    });
+  } catch (error) {
+    console.log({error});
+    yield put({
+      type: accountActions.addCartProductFailed,
+      payload: error.response.error.message ?? 'Không thể thêm vào cart',
     });
   }
 }
@@ -259,5 +347,11 @@ export default [
   },
   function* deleteCartWatcher() {
     yield takeEvery(accountActions.deleteCartItem.type, deleteCartItem);
+  },
+  function* processBuyCartWatcher() {
+    yield takeEvery(accountActions.checkPriceBuy.type, processBuyCart);
+  },
+  function* addCartProductWatcher() {
+    yield takeEvery(accountActions.addCartProduct.type, addCartProduct);
   },
 ];

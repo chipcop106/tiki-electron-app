@@ -42,8 +42,7 @@ const FastSale: React.FC = () => {
   const [method, setMethod] = useState('cod');
   const [gift, setGift] = useState(false);
   const accounts = useSelector(
-    (state: RootState) => state.account.accounts,
-    shallowEqual
+    (state: RootState) => state.account.accounts
   );
   const dispatch = useDispatch();
 
@@ -91,7 +90,7 @@ const FastSale: React.FC = () => {
     setQuantity(valueAsNumber);
   };
 
-  const buyMultipleAccount = (e) => {
+  const addCartMultipleAccount = (e) => {
     e.preventDefault();
     accounts &&
       accounts.length > 0 &&
@@ -99,13 +98,11 @@ const FastSale: React.FC = () => {
         .filter((item) => item.isLogin === true)
         .map((acc) => {
           dispatch(
-            AccountActions.processBuyProduct({
+            AccountActions.addCartProduct({
               id: acc.id,
               access_token: acc.access_token,
-              productId,
+              product_id: productId,
               quantity,
-              payment_method: method,
-              gift,
             })
           );
         });
@@ -113,7 +110,9 @@ const FastSale: React.FC = () => {
 
   useEffect(() => {
     console.log({ accounts });
+
   }, [accounts]);
+
 
   return (
     <>
@@ -165,36 +164,36 @@ const FastSale: React.FC = () => {
                   </NumberInputStepper>
                 </NumberInput>
               </Box>
-              <Box width={150}>
-                <Select size="sm" value={method} onChange={handleChangeMethod}>
-                  <option value="cod">COD</option>
-                  <option value="momo">Momo</option>
-                  <option value="cybersource">Visa / Master card</option>
-                </Select>
-              </Box>
-              <Box mx={4} flexShrink={0}>
-                <FormControl display="flex" alignItems="center">
-                  <FormLabel htmlFor="email-alerts" mb="0" flexShrink={0}>
-                    Nhận kèm quà?
-                  </FormLabel>
-                  <Tooltip
-                    label="Một vài sản phẩm kèm theo nhận quà sẽ không mua được, nên test trước khi setup"
-                    aria-label="A tooltip"
-                    shouldWrapChildren
-                  >
-                    <Switch
-                      id="gift-recieve"
-                      onChange={handleGiftChange}
-                      value={gift}
-                    />
-                  </Tooltip>
-                </FormControl>
-              </Box>
+              {/*<Box width={150}>*/}
+              {/*  <Select size="sm" value={method} onChange={handleChangeMethod}>*/}
+              {/*    <option value="cod">COD</option>*/}
+              {/*    <option value="momo">Momo</option>*/}
+              {/*    <option value="cybersource">Visa / Master card</option>*/}
+              {/*  </Select>*/}
+              {/*</Box>*/}
+              {/*<Box mx={4} flexShrink={0}>*/}
+              {/*  <FormControl display="flex" alignItems="center">*/}
+              {/*    <FormLabel htmlFor="email-alerts" mb="0" flexShrink={0}>*/}
+              {/*      Nhận kèm quà?*/}
+              {/*    </FormLabel>*/}
+              {/*    <Tooltip*/}
+              {/*      label="Một vài sản phẩm kèm theo nhận quà sẽ không mua được, nên test trước khi setup"*/}
+              {/*      aria-label="A tooltip"*/}
+              {/*      shouldWrapChildren*/}
+              {/*    >*/}
+              {/*      <Switch*/}
+              {/*        id="gift-recieve"*/}
+              {/*        onChange={handleGiftChange}*/}
+              {/*        value={gift}*/}
+              {/*      />*/}
+              {/*    </Tooltip>*/}
+              {/*  </FormControl>*/}
+              {/*</Box>*/}
               <Box>
                 <Button
                   colorScheme="blue"
                   size="sm"
-                  onClick={buyMultipleAccount}
+                  onClick={addCartMultipleAccount}
                 >
                   Thêm tất cả
                 </Button>

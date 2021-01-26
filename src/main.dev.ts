@@ -18,6 +18,7 @@ import Store from 'electron-store';
 import MenuBuilder from './menu';
 import store from './redux/store';
 
+
 export default class AppUpdater {
   constructor() {
     log.transports.file.level = 'info';

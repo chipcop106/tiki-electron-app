@@ -28,6 +28,10 @@ import {
   HStack,
   FormHelperText,
   Tfoot,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
 } from '@chakra-ui/react';
 import styled from '@emotion/styled';
 import { AiOutlineDelete, AiOutlineFileAdd } from 'react-icons/ai';
@@ -42,6 +46,7 @@ import {
   actions,
 } from '../../redux/features/account/accountSlice';
 import AccountModal from '../AccountModal';
+import { getCartData } from '../../api/cart';
 
 const alertSettings = {
   movable: false,
@@ -62,9 +67,11 @@ const UserCard = ({
     username,
     password,
     histories = [],
-    cart = {
-      cartItems: [],
-      subTotal: 0,
+    cartItems = [],
+    subTotal = 0,
+    buyError = {
+      isError: false,
+      message: '',
     },
   },
   isFastSale = false,
@@ -73,6 +80,8 @@ const UserCard = ({
   const [quantity, setQuantity] = useState(1);
   const [method, setMethod] = useState('cod');
   const [gift, setGift] = useState(false);
+  const [priceCheck, setPriceCheck] = useState(0);
+  const [isChecking, setIsChecking] = useState(false);
   const dispatch = useDispatch();
 
   const loginAccount = () => {
@@ -97,22 +106,19 @@ const UserCard = ({
     dispatch(actions.cancelOrder({ id, access_token, orderId }));
   };
 
-  // const handleGiftChange = (e) => {
-  //   setGift(!e.target.checked);
-  // };
-  //
-  // const handleChangeProductId = (e) => {
-  //   setProductId(e.target.value);
-  // };
-  // const handleChangeMethod = (e) => {
-  //   setMethod(e.target.value);
-  // };
-  // const handleChangeQuantity = (
-  //   valueAsString: string,
-  //   valueAsNumber: number
-  // ) => {
-  //   setQuantity(valueAsNumber);
-  // };
+  const handleGiftChange = (e) => {
+    setGift(!e.target.checked);
+  };
+
+  const handleChangeMethod = (e) => {
+    setMethod(e.target.value);
+  };
+  const handleChangeQuantity = (
+    valueAsString: string,
+    valueAsNumber: number
+  ) => {
+    setQuantity(valueAsNumber);
+  };
 
   const getCartByAccount = (): void => {
     dispatch(
@@ -135,7 +141,51 @@ const UserCard = ({
 
   const addItemToCart = () => {};
 
-  const deleteAllCart = () => {};
+  const deleteAllCart = () => {
+    cartItems.length > 0 &&
+      cartItems.map((item) => {
+        dispatch(
+          actions.deleteCartItem({
+            id,
+            itemId: item.id,
+            access_token,
+          })
+        );
+      });
+  };
+
+  const checkPrice = async () => {
+    setIsChecking(!isChecking);
+  };
+
+  useEffect(() => {
+    let interval = null;
+    if(isChecking){
+      interval = setInterval(async () => {
+        const cartData = await getCartData({
+          access_token,
+        });
+        const { subtotal } = cartData.data;
+        if (subtotal < priceCheck) {
+          dispatch(
+            actions.checkPriceBuy({
+              access_token,
+              id,
+              gift,
+              method,
+            })
+          );
+          clearInterval(interval);
+          setIsChecking(false);
+        }
+      }, 1000);
+    }else{
+      clearInterval(interval);
+    }
+    return () => {
+      clearInterval(interval);
+    }
+  }, [isChecking]);
 
   useEffect(() => {
     getCartByAccount();
@@ -225,7 +275,7 @@ const UserCard = ({
                     leftIcon={<AiOutlineDelete />}
                     colorScheme="red"
                     size="sm"
-                    onClick={() => {}}
+                    onClick={deleteAllCart}
                   >
                     Xóa giỏ hàng
                   </Button>
@@ -251,6 +301,7 @@ const UserCard = ({
           </Stack>
           {isFastSale ? (
             <>
+
               <Box my={4}>
                 <Table size="sm">
                   <Thead>
@@ -263,7 +314,7 @@ const UserCard = ({
                         <Text align="center">Số lượng</Text>
                       </Th>
                       <Th>
-                        <Text align="center">Giá tiền</Text>
+                        <Text align="right">Giá tiền</Text>
                       </Th>
                       <Th>
                         {' '}
@@ -273,8 +324,8 @@ const UserCard = ({
                     </Tr>
                   </Thead>
                   <Tbody>
-                    {cart.cartItems.length > 0 ? (
-                      cart.cartItems.map((item) => (
+                    {cartItems.length > 0 ? (
+                      cartItems.map((item) => (
                         <Tr key={`${item.id}`}>
                           <Td>
                             <Text align="center">{item.product_id}</Text>
@@ -290,7 +341,7 @@ const UserCard = ({
                             <Text align="center">{item.qty}</Text>
                           </Td>
                           <Td>
-                            <Text align="center">
+                            <Text align="right">
                               <strong>
                                 <CurrencyFormat
                                   displayType="text"
@@ -306,14 +357,7 @@ const UserCard = ({
                                 size="xs"
                                 colorScheme="red"
                                 variant="ghost"
-                                onClick={() => {
-                                  alertify.confirm(
-                                    'Xác nhận xóa ?',
-                                    `Bạn có chắc muốn xóa ${item.product_name} ?`,
-                                    () => deleteCartItem(item.id),
-                                    () => {}
-                                  );
-                                }}
+                                onClick={() => deleteCartItem(item.id)}
                               >
                                 Xóa
                               </Button>
@@ -335,18 +379,21 @@ const UserCard = ({
                   </Tbody>
                   <Tfoot>
                     <Tr>
-                      <Td colSpan={5}>
-                        <strong>Tổng tiền giỏ hàng:</strong>
-                        <Text as="span" color="red.500" ml={4}>
-                          <strong>
-                            <CurrencyFormat
-                              displayType="text"
-                              thousandSeparator
-                              value={cart.subTotal}
-                            />
-                          </strong>
+                      <Td colSpan={4}>
+                        <Text align="right">
+                          <strong>Tổng tiền giỏ hàng:</strong>
+                          <Text as="span" color="red.500" ml={4}>
+                            <strong>
+                              <CurrencyFormat
+                                displayType="text"
+                                thousandSeparator
+                                value={subTotal}
+                              />
+                            </strong>
+                          </Text>
                         </Text>
                       </Td>
+                      <Td />
                     </Tr>
                   </Tfoot>
                 </Table>
@@ -354,9 +401,41 @@ const UserCard = ({
               <HStack justif="space-between" align="center">
                 <form>
                   <HStack>
+                      <Box width={150} flexShrink={0}>
+                        <Select size="sm" value={method} onChange={handleChangeMethod}>
+                          <option value="cod">COD</option>
+                          <option value="momo">Momo</option>
+                          <option value="cybersource">Visa / Master card</option>
+                        </Select>
+                      </Box>
+                      <Box mx={4} flexShrink={0}>
+                        <FormControl display="flex" alignItems="center">
+                          <FormLabel htmlFor="email-alerts" mb="0" flexShrink={0}>
+                            Nhận kèm quà?
+                          </FormLabel>
+                          <Tooltip
+                            label="Một vài sản phẩm kèm theo nhận quà sẽ không mua được, nên test trước khi setup"
+                            aria-label="A tooltip"
+                            shouldWrapChildren
+                          >
+                            <Switch
+                              id="gift-recieve"
+                              onChange={handleGiftChange}
+                              value={gift}
+                            />
+                          </Tooltip>
+                        </FormControl>
+                      </Box>
                     <FormControl mr={2}>
                       <FormLabel>Giá tiền</FormLabel>
-                      <NumberInput min={10} size="sm">
+                      <NumberInput
+                        min={0}
+                        size="sm"
+                        value={priceCheck}
+                        onChange={(valueAsString, valueAsNumber) =>
+                          setPriceCheck(valueAsNumber)
+                        }
+                      >
                         <NumberInputField />
                         <NumberInputStepper>
                           <NumberIncrementStepper />
@@ -368,13 +447,13 @@ const UserCard = ({
                       </FormHelperText>
                     </FormControl>
                     <Button
-                      colorScheme="green"
+                      colorScheme={isChecking ? "red" : "green"}
                       leftIcon={<BsClockFill />}
-                      onClick={() => {}}
+                      onClick={checkPrice}
                       flexShrink={0}
                       size="sm"
                     >
-                      Check
+                      {isChecking ? 'Cancel' : 'Check'}
                     </Button>
                   </HStack>
                 </form>

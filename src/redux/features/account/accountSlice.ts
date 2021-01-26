@@ -24,10 +24,14 @@ interface Account {
   histories: Array<History>;
   isLogin: boolean;
   isProcessing: boolean;
-  cart?: {
+  cart: {
     cartItems: any[];
     subTotal: number;
   };
+  buyError: {
+    isError: boolean;
+    message: string;
+  } | null;
 }
 
 export interface AccountType {
@@ -40,6 +44,11 @@ export interface AccountType {
     isError: boolean;
     message: string;
   } | null;
+  isAdding: boolean;
+  addError: {
+    isError: boolean;
+    message: string;
+  };
 }
 
 export interface AccountID {
@@ -53,6 +62,8 @@ const initialState: AccountType = {
   loading: false,
   openModal: false,
   cartLoading: false,
+  isAdding: false,
+  addError: null,
 };
 
 export const accountSlice = createSlice({
@@ -133,10 +144,8 @@ export const accountSlice = createSlice({
         if (account.id === payload.id) {
           return {
             ...account,
-            cart: {
-              cartItems: JSON.parse(payload.cartItems),
-              subTotal: payload.subTotal,
-            },
+            cartItems: JSON.parse(payload.cartItems),
+            subTotal: payload.subTotal,
           };
         }
         return account;
@@ -222,6 +231,72 @@ export const accountSlice = createSlice({
         }
         return account;
       });
+    },
+    checkPriceBuy: (state, { payload }) => {
+      state.accounts = [...state.accounts].map((account: Account) => {
+        if (account.id === payload.id) {
+          account.buyError = {
+            isError: false,
+            message: '',
+          };
+        }
+        return account;
+      });
+    },
+    checkPriceBuySuccess: (state, { payload }) => {
+      state.accounts = [...state.accounts].map((account: Account) => {
+        if (account.id === payload.id) {
+          account.cart.cartItems = [];
+          account.buyError = {
+            isError: false,
+            message: 'Mua thành công !!',
+          };
+        }
+        return account;
+      });
+    },
+    checkPriceBuyFailed: (state, { payload }) => {
+      state.accounts = [...state.accounts].map((account: Account) => {
+        if (account.id === payload.id) {
+          account.buyError = {
+            isError: true,
+            message: payload,
+          };
+        }
+        return account;
+      });
+    },
+    addCartProduct: (state, { payload }) => {
+      state.isAdding = true;
+      state.addError = {
+        isError: false,
+        message: '',
+      };
+      return state;
+    },
+    addCartProductSuccess: (state, { payload }) => {
+      console.log({payload});
+      state.accounts = [...state.accounts].map((account: Account) => {
+        if (account.id === payload.id) {
+          console.log('matching nè');
+          return {
+            ...account,
+            cart: {
+              cartItems: [...account.cart.cartItems, JSON.parse(payload.item)],
+            },
+          };
+        }
+        return account;
+      });
+      state.isAdding = false;
+      return state;
+    },
+    addCartProductFailed: (state, { payload }) => {
+      state.isAdding = false;
+      state.addError = {
+        isError: true,
+        message: payload,
+      };
     },
   },
 });

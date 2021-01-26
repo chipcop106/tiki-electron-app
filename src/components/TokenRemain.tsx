@@ -17,9 +17,13 @@ const TokenRemain = ({ time, id }) => {
     return differenceInMinutes(date, new Date());
   };
   useEffect(() => {
-    const interval = setInterval(() => {
-      const timer = getTimeRemain(time);
+    let interval = null;
+    interval = setInterval(() => {
+      const timer = getTimeRemain(accountInfo?.expires_at);
       setValue(timer);
+      if (timer < 0) {
+        clearInterval(interval);
+      }
     }, 1000);
 
     return () => {
