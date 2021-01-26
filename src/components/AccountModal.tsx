@@ -107,77 +107,79 @@ const AccountModal = ({
       >
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>
-            {!type === 'edit' ? 'Thêm tài khoản mới' : 'Chỉnh sửa'}
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            <FormControl>
-              <FormLabel>Tài khoản</FormLabel>
-              <Input
-                ref={initialRef}
-                placeholder="Email hoặc tên TK"
-                value={username}
-                onChange={changeUsername}
-              />
-            </FormControl>
-
-            <FormControl mt={4}>
-              <FormLabel>Mật khẩu</FormLabel>
-              <PasswordInput value={password} onChange={changePassword} />
-            </FormControl>
-            {account.error && account.error !== null && (
-              <Alert status={account.error ? 'error' : 'success'} mt={4}>
-                <AlertIcon />
-                <AlertTitle mr={2}>
-                  {account.error ? 'Error !' : 'Success'}
-                </AlertTitle>
-                <AlertDescription>
-                  {account.error ? account.error : 'Thêm thành công'}
-                </AlertDescription>
-                <CloseButton
-                  position="absolute"
-                  right="8px"
-                  top="8px"
-                  onClick={() => dispatch(actions.clearError())}
+          <form onSubmit={onSubmit}>
+            <ModalHeader>
+              {!type === 'edit' ? 'Thêm tài khoản mới' : 'Chỉnh sửa'}
+            </ModalHeader>
+            <ModalCloseButton />
+            <ModalBody pb={6}>
+              <FormControl>
+                <FormLabel>Tài khoản</FormLabel>
+                <Input
+                  ref={initialRef}
+                  placeholder="Email hoặc tên TK"
+                  value={username}
+                  onChange={changeUsername}
                 />
-              </Alert>
-            )}
-            {account.error === false && (
-              <Alert status={account.error ? 'error' : 'success'} mt={4}>
-                <AlertIcon />
-                <AlertTitle mr={2}>
-                  {account.error ? 'Error !' : 'Success'}
-                </AlertTitle>
-                <AlertDescription>
-                  {account.error
-                    ? account.error
-                    : type === 'edit'
-                    ? 'Cập nhật thành công '
-                    : 'Thêm thành công'}
-                </AlertDescription>
-                <CloseButton
-                  position="absolute"
-                  right="8px"
-                  top="8px"
-                  onClick={() => dispatch(actions.clearError())}
-                />
-              </Alert>
-            )}
-          </ModalBody>
+              </FormControl>
 
-          <ModalFooter>
-            <Button
-              colorScheme="blue"
-              mr={3}
-              onClick={onSubmit}
-              isLoading={account.loading}
-              loadingText={type === 'edit' ? 'Saving...' : 'Creating...'}
-            >
-              {type === 'edit' ? 'Save' : 'Create'}
-            </Button>
-            <Button onClick={onClose}>Cancel</Button>
-          </ModalFooter>
+              <FormControl mt={4}>
+                <FormLabel>Mật khẩu</FormLabel>
+                <PasswordInput value={password} onChange={changePassword} />
+              </FormControl>
+              {account.error && account.error !== null && (
+                <Alert status={account.error ? 'error' : 'success'} mt={4}>
+                  <AlertIcon />
+                  <AlertTitle mr={2}>
+                    {account.error ? 'Error !' : 'Success'}
+                  </AlertTitle>
+                  <AlertDescription>
+                    {account.error ? account.error : 'Thêm thành công'}
+                  </AlertDescription>
+                  <CloseButton
+                    position="absolute"
+                    right="8px"
+                    top="8px"
+                    onClick={() => dispatch(actions.clearError())}
+                  />
+                </Alert>
+              )}
+              {account.error === false && (
+                <Alert status={account.error ? 'error' : 'success'} mt={4}>
+                  <AlertIcon />
+                  <AlertTitle mr={2}>
+                    {account.error ? 'Error !' : 'Success'}
+                  </AlertTitle>
+                  <AlertDescription>
+                    {account.error
+                      ? account.error
+                      : type === 'edit'
+                      ? 'Cập nhật thành công '
+                      : 'Thêm thành công'}
+                  </AlertDescription>
+                  <CloseButton
+                    position="absolute"
+                    right="8px"
+                    top="8px"
+                    onClick={() => dispatch(actions.clearError())}
+                  />
+                </Alert>
+              )}
+            </ModalBody>
+
+            <ModalFooter>
+              <Button
+                type="submit"
+                colorScheme="blue"
+                mr={3}
+                isLoading={account.loading}
+                loadingText={type === 'edit' ? 'Saving...' : 'Creating...'}
+              >
+                {type === 'edit' ? 'Save' : 'Create'}
+              </Button>
+              <Button onClick={onClose}>Cancel</Button>
+            </ModalFooter>
+          </form>
         </ModalContent>
       </Modal>
     </>

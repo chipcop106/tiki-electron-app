@@ -24,24 +24,27 @@ import {
   Switch,
   FormLabel,
   Tooltip,
+  Divider,
 } from '@chakra-ui/react';
 
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
 import { AiOutlineDrag, AiOutlineExpandAlt } from 'react-icons/ai';
 import UserCard from '../../../components/UserCard/UserCard';
 import { actions as AccountActions } from '../account/accountSlice';
-import './index.scss';
 import { RootState } from '../rootReducer';
 import TokenRemain from '../../../components/TokenRemain';
 
-const Dashboard: React.FC = () => {
+const FastSale: React.FC = () => {
   const [collapse, setCollapse] = useState(true);
   const [collapseItem, setCollapseItem] = useState([]);
   const [productId, setProductId] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [method, setMethod] = useState('cod');
   const [gift, setGift] = useState(false);
-  const accounts = useSelector((state: RootState) => state.account.accounts);
+  const accounts = useSelector(
+    (state: RootState) => state.account.accounts,
+    shallowEqual
+  );
   const dispatch = useDispatch();
 
   const _toggleCollapse = (): void => {
@@ -108,6 +111,10 @@ const Dashboard: React.FC = () => {
         });
   };
 
+  useEffect(() => {
+    console.log({ accounts });
+  }, [accounts]);
+
   return (
     <>
       <Stack direction={['row']} mb={8} justify="space-between">
@@ -125,7 +132,7 @@ const Dashboard: React.FC = () => {
       </Stack>
 
       <Box>
-        <Heading size="sm">Sản phẩm</Heading>
+        <Heading size="sm">Thêm chung tất cả</Heading>
         <Stack
           direction={['column', 'row']}
           spacing="24px"
@@ -189,15 +196,15 @@ const Dashboard: React.FC = () => {
                   size="sm"
                   onClick={buyMultipleAccount}
                 >
-                  Mua sản phẩm ngay
+                  Thêm tất cả
                 </Button>
               </Box>
             </Flex>
           </form>
         </Stack>
       </Box>
-
-      <Box>
+      <Divider />
+      <Box mt={8} borderTopWidth={1} borderStyle="solid" borderColor="gray.100">
         <Accordion
           index={collapseItem}
           onChange={handleChangeCollapse}
@@ -237,15 +244,6 @@ const Dashboard: React.FC = () => {
                         <TokenRemain
                           time={account.expires_at}
                           id={account.id}
-                          renewToken={() =>
-                            dispatch(
-                              AccountActions.loginAccount({
-                                id: account.id,
-                                username: account.username,
-                                password: account.password,
-                              })
-                            )
-                          }
                         />
                       </Box>
                     )}
@@ -254,7 +252,7 @@ const Dashboard: React.FC = () => {
                 </Flex>
               </AccordionButton>
               <AccordionPanel pb={4}>
-                <UserCard data={account} />
+                <UserCard data={account} isFastSale />
               </AccordionPanel>
             </AccordionItem>
           ))}
@@ -264,4 +262,4 @@ const Dashboard: React.FC = () => {
   );
 };
 
-export default Dashboard;
+export default FastSale;

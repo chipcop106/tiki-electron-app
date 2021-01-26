@@ -24,13 +24,22 @@ interface Account {
   histories: Array<History>;
   isLogin: boolean;
   isProcessing: boolean;
+  cart?: {
+    cartItems: any[];
+    subTotal: number;
+  };
 }
 
 export interface AccountType {
   accounts: Array<Account> | null;
-  error: boolean | string | null;
+  error: Error | boolean | string | null;
   loading: boolean;
   openModal: boolean;
+  cartLoading: boolean;
+  cartError: {
+    isError: boolean;
+    message: string;
+  } | null;
 }
 
 export interface AccountID {
@@ -38,86 +47,12 @@ export interface AccountID {
 }
 
 const initialState: AccountType = {
-  accounts: [
-    {
-      id: 'f873242f-bf26-4e5a-bb21-e9e3a82a825c',
-      username: 'tle53161@gmail.com',
-      password: 'Lhv123321',
-      isLogin: false,
-      access_token: '',
-      refresh_token: 'feceb4b8-6a14-451c-a00f-e1fa98007c07',
-      token_type:
-        'eu mi nulla ac enim in tempor turpis nec euismod scelerisque quam turpis adipiscing lorem vitae mattis',
-      expires_in: 1800,
-      expires_at: 171021037,
-      customer_id: 'e4e4cd51-acde-4fbd-8c13-f224643e319e',
-      isProcessing: false,
-      histories: [],
-    },
-    {
-      id: 'e05fea1a-1804-4667-a1c5-54669b5c2509',
-      username: 'lt4211987@gmail.com',
-      password: 'Lhv123321',
-      isLogin: false,
-      access_token: '',
-      refresh_token: 'b6bbe334-0a3f-4a31-b113-7279b882207e',
-      token_type:
-        'congue diam id ornare imperdiet sapien urna pretium nisl ut volutpat',
-      expires_in: 1800,
-      expires_at: 0,
-      isProcessing: false,
-      customer_id: '53f4415b-6002-4664-864f-7f6d3b076f18',
-      histories: [],
-    },
-    {
-      id: 'e9abc5ec-cc63-4544-ab2f-bb6622d9e34c',
-      username: 'kmanhkhiem1@gmail.com',
-      password: 'Lhv123321',
-      isLogin: false,
-      access_token: '',
-      refresh_token: 'fe21d343-ad05-47f8-9598-9ed36311b7b4',
-      token_type:
-        'suspendisse potenti in eleifend quam a odio in hac habitasse platea dictumst maecenas ut massa quis augue luctus tincidunt nulla',
-      expires_in: 1800,
-      expires_at: 167069975,
-      isProcessing: false,
-      customer_id: 'b1db6254-a81b-47f8-a6be-a176f2d5b8cb',
-      histories: [],
-    },
-    {
-      id: 'd03a009c-bbf6-4f84-a988-b1ec2ab19493',
-      username: 'buit0983@gmail.com',
-      password: 'Lhv123321',
-      isLogin: false,
-      access_token: '',
-      refresh_token: 'b14f3f5a-6095-4828-887a-2a407d352cd1',
-      token_type:
-        'suscipit ligula in lacus curabitur at ipsum ac tellus semper interdum mauris ullamcorper purus sit amet',
-      expires_in: 1800,
-      expires_at: 0,
-      isProcessing: false,
-      customer_id: '756afb6b-e158-4fab-8708-f60cf9a19004',
-      histories: [],
-    },
-    {
-      id: '1dfeba0f-fe24-49e5-b287-7a98664055d6',
-      username: 'phupngng233@gmail.com',
-      password: 'Lhv123321',
-      isLogin: false,
-      access_token: '',
-      refresh_token: '85ad673c-eeb8-4760-91d2-6c8f9b6d7a70',
-      token_type:
-        'rutrum at lorem integer tincidunt ante vel ipsum praesent blandit lacinia',
-      expires_in: 1800,
-      expires_at: 0,
-      isProcessing: false,
-      customer_id: 'ce692a04-3a64-4e2f-8e94-839a9b46d330',
-      histories: [],
-    },
-  ],
+  accounts: [],
   error: null,
+  cartError: null,
   loading: false,
   openModal: false,
+  cartLoading: false,
 };
 
 export const accountSlice = createSlice({
@@ -188,6 +123,61 @@ export const accountSlice = createSlice({
         }
         return account;
       });
+    },
+    getCart: (state, { payload }) => {
+      state.cartLoading = true;
+      state.error = null;
+    },
+    getCartSuccess: (state, { payload }) => {
+      state.accounts = [...state.accounts].map((account: Account) => {
+        if (account.id === payload.id) {
+          return {
+            ...account,
+            cart: {
+              cartItems: JSON.parse(payload.cartItems),
+              subTotal: payload.subTotal,
+            },
+          };
+        }
+        return account;
+      });
+      state.cartLoading = false;
+    },
+    getCartError: (state, { payload }) => {
+      state.error = payload;
+      state.cartLoading = false;
+    },
+    deleteCartItem: (state, { payload }) => {
+      state.cartError = null;
+    },
+    deleteCartItemSuccess: (state, { payload }) => {
+      state.accounts = [...state.accounts].map((account: Account) => {
+        if (account.id === payload.id) {
+          const newCartItems = account.cart.cartItems.filter(
+            (item) => item.id !== payload.itemId
+          );
+
+          return {
+            ...account,
+            cart: {
+              ...account.cart,
+              cartItems: newCartItems,
+              subTotal: newCartItems.reduce(
+                (prev, next) => prev + next.subtotal,
+                0
+              ),
+            },
+          };
+        }
+        return account;
+      });
+      state.cartError = null;
+    },
+    deleteCartItemFailed: (state, { payload }) => {
+      state.cartError = {
+        isError: true,
+        message: payload,
+      };
     },
 
     clearError: (state) => {

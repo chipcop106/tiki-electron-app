@@ -105,6 +105,18 @@ export const completeCheckOut = async (params: {
     }
   );
 };
+// https://tiki.vn/api/v2/carts/mine/items/76434d88-5fba-11eb-821f-12780289e526
+
+export const deleteCart = async (params: {
+  access_token: string;
+  itemId: string;
+}) => {
+  return instance.delete(`${PATH}/mine/items/${params.itemId}`, {
+    headers: {
+      'x-access-token': params.access_token,
+    },
+  });
+};
 
 interface AddToCartPayload extends AccessToken {
   product_id: string;

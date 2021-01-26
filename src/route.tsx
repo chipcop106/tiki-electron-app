@@ -9,6 +9,7 @@ import { Flex } from '@chakra-ui/react';
 import Dashboard from './redux/features/dashboard';
 import Account from './redux/features/account';
 import { Nav, PageContainer, Footer } from './components/Layout';
+import FastSale from './redux/features/fastsale';
 
 const AppRouter = () => {
   return (
@@ -19,6 +20,7 @@ const AppRouter = () => {
         <Switch>
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/account" component={Account} />
+          <Route path="/fast-sale" component={FastSale} />
         </Switch>
       </Flex>
       <Footer />

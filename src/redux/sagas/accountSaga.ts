@@ -1,5 +1,6 @@
-import { takeEvery, put, takeLatest, select } from 'redux-saga/effects';
+import { takeEvery, put, takeLatest, select, call } from 'redux-saga/effects';
 import { v4 as uuidv4 } from 'uuid';
+import alertify from 'alertifyjs';
 import { actions as accountActions } from '../features/account/accountSlice';
 import {
   login,
@@ -7,6 +8,7 @@ import {
   cancelOrder as cancelOrderById,
 } from '../../api/account';
 import { getProductInfo } from '../../api/product';
+
 import {
   getCartData,
   addToCart,
@@ -14,11 +16,12 @@ import {
   setPaymentMethod,
   setGiftNone,
   completeCheckOut,
+  deleteCart,
 } from '../../api/cart';
 
 export function* loginAccount({ payload }) {
   try {
-    const resLogin = yield login({
+    const resLogin = yield call(login, {
       email: payload.username,
       password: payload.password,
     });
@@ -39,7 +42,7 @@ export function* loginAccount({ payload }) {
 
 export function* addAccount({ payload }) {
   try {
-    const resLogin = yield login({
+    const resLogin = yield call(login, {
       email: payload.username,
       password: payload.password,
     });
@@ -77,7 +80,7 @@ export function* addAccount({ payload }) {
 
 export function* updateAccount({ payload }) {
   try {
-    const resLogin = yield login({
+    const resLogin = yield call(login, {
       email: payload.username,
       password: payload.password,
     });
@@ -107,8 +110,6 @@ export function* updateAccount({ payload }) {
 }
 
 export function* processBuyProduct({ payload }) {
-  console.log('Payload processbuy', payload);
-
   // eslint-disable-next-line @typescript-eslint/naming-convention
   const {
     access_token,
@@ -118,32 +119,30 @@ export function* processBuyProduct({ payload }) {
     gift,
   } = payload;
   try {
-    const userAddress = yield getUserAddress({ access_token });
-    const cartData = yield getCartData({ access_token });
-
-    console.log({ cartData });
-    yield addToCart({
+    const userAddress = yield call(getUserAddress, { access_token });
+    const cartData = yield call(getCartData, { access_token });
+    yield call(addToCart, {
       product_id,
       access_token,
       quantity: quantity.toString(),
     });
-    yield setAddress({
+    yield call(setAddress, {
       access_token,
       address_id: userAddress.data.data.find(
         (item: any) => item.is_default === true
       ).id,
     });
-    yield setPaymentMethod({
+    yield call(setPaymentMethod, {
       access_token,
       payment_method,
     });
 
     if (gift) {
-      yield setGiftNone({
+      yield call(setGiftNone, {
         access_token,
       });
     }
-    const resCheckout = yield completeCheckOut({
+    const resCheckout = yield call(completeCheckOut, {
       access_token,
       payment_method,
     });
@@ -183,9 +182,8 @@ export function* processBuyProduct({ payload }) {
 }
 
 export function* cancelOrder({ payload }) {
-  console.log('Payload cancel', payload);
   try {
-    const res = yield cancelOrderById({
+    const res = yield call(cancelOrderById, {
       access_token: payload.access_token,
       orderId: payload.orderId,
     });
@@ -194,6 +192,49 @@ export function* cancelOrder({ payload }) {
     }
   } catch (error) {
     console.log({ error });
+  }
+}
+
+export function* getCart({ payload }) {
+  const { access_token, id } = payload;
+  try {
+    const cartData = yield call(getCartData, { access_token });
+    if (cartData.data) {
+      yield put({
+        type: accountActions.getCartSuccess,
+        payload: {
+          id,
+          cartItems: JSON.stringify(cartData.data.items),
+          subTotal: cartData.data.subtotal,
+        },
+      });
+    }
+  } catch (error) {
+    yield put({
+      type: accountActions.getCartError,
+      payload: error.response.error.message ?? 'Lỗi khi lấy dữ liệu cart',
+    });
+  }
+}
+
+export function* deleteCartItem({ payload }) {
+  const { access_token, id, itemId } = payload;
+  try {
+    const res = yield call(deleteCart, { access_token, itemId });
+    if (res.status === 204) {
+      alertify.notify('Đã xóa thành công', 'success');
+      yield put({
+        type: accountActions.deleteCartItemSuccess,
+        payload: {
+          ...payload,
+        },
+      });
+    }
+  } catch (error) {
+    yield put({
+      type: accountActions.deleteCartItemFailed,
+      payload: error.response.error.message ?? 'Lỗi khi lấy dữ liệu cart',
+    });
   }
 }
 
@@ -210,7 +251,13 @@ export default [
   function* cancelOrderWatcher() {
     yield takeLatest(accountActions.cancelOrder.type, cancelOrder);
   },
-  function* processBuyProductMultiple() {
+  function* processBuyProductMultipleWatcher() {
     yield takeEvery(accountActions.processBuyProduct.type, processBuyProduct);
+  },
+  function* getCartWatcher() {
+    yield takeEvery(accountActions.getCart.type, getCart);
+  },
+  function* deleteCartWatcher() {
+    yield takeEvery(accountActions.deleteCartItem.type, deleteCartItem);
   },
 ];

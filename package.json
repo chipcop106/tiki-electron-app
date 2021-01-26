@@ -274,6 +274,7 @@
     "framer-motion": "^3.2.1",
     "history": "^5.0.0",
     "react": "^17.0.1",
+    "react-currency-format": "^1.0.0",
     "react-dom": "^17.0.1",
     "react-icons": "^4.1.0",
     "react-redux": "^7.2.2",

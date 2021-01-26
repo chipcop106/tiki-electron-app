@@ -5,8 +5,14 @@ import { PersistGate } from 'redux-persist/integration/react';
 import store, { persistor } from './redux/store';
 import AppRouter from './route';
 import { PageContainer } from './components/Layout';
+import './App.global.css';
 
-const colors = {};
+const colors = {
+  fonts: {
+    heading: 'monospace',
+    body: 'monospace',
+  },
+};
 
 const theme = extendTheme({ colors });
 
