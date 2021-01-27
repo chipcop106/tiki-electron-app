@@ -1,4 +1,11 @@
-import { takeEvery, put, takeLatest, select, call, take } from 'redux-saga/effects';
+import {
+  takeEvery,
+  put,
+  takeLatest,
+  select,
+  call,
+  take,
+} from 'redux-saga/effects';
 import { v4 as uuidv4 } from 'uuid';
 import { actions as accountActions } from '../features/account/accountSlice';
 import {
@@ -32,7 +39,12 @@ export function* loginAccount({ payload }) {
         payload: {
           ...resLogin.data,
           ...payload,
+          cart: {
+            cartItems: [],
+            subTotal: 0,
+          },
           isLogin: true,
+          isProcessing: false,
         },
       });
     }
@@ -55,6 +67,10 @@ export function* addAccount({ payload }) {
           ...resLogin.data,
           ...payload,
           histories: [],
+          cart: {
+            cartItems: [],
+            subTotal: 0,
+          },
           isLogin: true,
           isProcessing: false,
         },
@@ -241,9 +257,10 @@ export function* getCart({ payload }) {
   const { access_token, id } = payload;
   try {
     const cartData = yield call(getCartData, { access_token });
+    console.log({ cartData });
     if (cartData.data) {
-      const {items, subtotal} = cartData.data;
-      const newItems = items.map(item => ({
+      const { items, subtotal } = cartData.data;
+      const newItems = [...items].map((item) => ({
         id: item.id,
         subtotal: item.subtotal,
         price: item.price,
@@ -252,19 +269,27 @@ export function* getCart({ payload }) {
         product_url: item.product_url,
         qty: item.qty,
       }));
-      yield put({
-        type: accountActions.getCartSuccess,
-        payload: {
-          id,
-          cartItems: JSON.stringify(newItems),
-          subTotal: subtotal,
-        },
-      });
+      if (newItems) {
+        yield put({
+          type: accountActions.getCartSuccess,
+          payload: {
+            id,
+            cartItems: newItems,
+            subTotal: subtotal,
+          },
+        });
+      } else {
+        yield put({
+          type: accountActions.getCartError,
+          payload: 'Lỗi khi lấy dữ liệu cart',
+        });
+      }
     }
   } catch (error) {
+    console.log({ error });
     yield put({
       type: accountActions.getCartError,
-      payload: error.response.error.message ?? 'Lỗi khi lấy dữ liệu cart',
+      payload: error?.response?.error?.message ?? 'Lỗi khi lấy dữ liệu cart',
     });
   }
 }
@@ -299,8 +324,8 @@ export function* addCartProduct({ payload }) {
 
     const cartData = yield call(getCartData, { access_token });
 
-    const newItem = cartData.data.find(
-      (item) => item.product_id === product_id
+    const newItem = cartData.data.items.find(
+      (item) => item.product_id.toString() === product_id
     );
     yield put({
       type: accountActions.addCartProductSuccess,
@@ -318,10 +343,10 @@ export function* addCartProduct({ payload }) {
       },
     });
   } catch (error) {
-    console.log({error});
+    console.log({ error });
     yield put({
       type: accountActions.addCartProductFailed,
-      payload: error.response.error.message ?? 'Không thể thêm vào cart',
+      payload: error?.response?.error?.message ?? error.message,
     });
   }
 }

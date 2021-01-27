@@ -67,8 +67,7 @@ const UserCard = ({
     username,
     password,
     histories = [],
-    cartItems = [],
-    subTotal = 0,
+    cart = { cartItems: [], subTotal: 0 },
     buyError = {
       isError: false,
       message: '',
@@ -142,8 +141,8 @@ const UserCard = ({
   const addItemToCart = () => {};
 
   const deleteAllCart = () => {
-    cartItems.length > 0 &&
-      cartItems.map((item) => {
+    cart.cartItems.length > 0 &&
+      cart.cartItems.map((item) => {
         dispatch(
           actions.deleteCartItem({
             id,
@@ -160,7 +159,7 @@ const UserCard = ({
 
   useEffect(() => {
     let interval = null;
-    if(isChecking){
+    if (isChecking) {
       interval = setInterval(async () => {
         const cartData = await getCartData({
           access_token,
@@ -179,12 +178,12 @@ const UserCard = ({
           setIsChecking(false);
         }
       }, 1000);
-    }else{
+    } else {
       clearInterval(interval);
     }
     return () => {
       clearInterval(interval);
-    }
+    };
   }, [isChecking]);
 
   useEffect(() => {
@@ -301,7 +300,6 @@ const UserCard = ({
           </Stack>
           {isFastSale ? (
             <>
-
               <Box my={4}>
                 <Table size="sm">
                   <Thead>
@@ -324,8 +322,8 @@ const UserCard = ({
                     </Tr>
                   </Thead>
                   <Tbody>
-                    {cartItems.length > 0 ? (
-                      cartItems.map((item) => (
+                    {cart.cartItems.length > 0 ? (
+                      cart.cartItems.map((item) => (
                         <Tr key={`${item.id}`}>
                           <Td>
                             <Text align="center">{item.product_id}</Text>
@@ -387,7 +385,7 @@ const UserCard = ({
                               <CurrencyFormat
                                 displayType="text"
                                 thousandSeparator
-                                value={subTotal}
+                                value={cart.subTotal}
                               />
                             </strong>
                           </Text>
@@ -401,31 +399,35 @@ const UserCard = ({
               <HStack justif="space-between" align="center">
                 <form>
                   <HStack>
-                      <Box width={150} flexShrink={0}>
-                        <Select size="sm" value={method} onChange={handleChangeMethod}>
-                          <option value="cod">COD</option>
-                          <option value="momo">Momo</option>
-                          <option value="cybersource">Visa / Master card</option>
-                        </Select>
-                      </Box>
-                      <Box mx={4} flexShrink={0}>
-                        <FormControl display="flex" alignItems="center">
-                          <FormLabel htmlFor="email-alerts" mb="0" flexShrink={0}>
-                            Nhận kèm quà?
-                          </FormLabel>
-                          <Tooltip
-                            label="Một vài sản phẩm kèm theo nhận quà sẽ không mua được, nên test trước khi setup"
-                            aria-label="A tooltip"
-                            shouldWrapChildren
-                          >
-                            <Switch
-                              id="gift-recieve"
-                              onChange={handleGiftChange}
-                              value={gift}
-                            />
-                          </Tooltip>
-                        </FormControl>
-                      </Box>
+                    <Box width={150} flexShrink={0}>
+                      <Select
+                        size="sm"
+                        value={method}
+                        onChange={handleChangeMethod}
+                      >
+                        <option value="cod">COD</option>
+                        <option value="momo">Momo</option>
+                        <option value="cybersource">Visa / Master card</option>
+                      </Select>
+                    </Box>
+                    <Box mx={4} flexShrink={0}>
+                      <FormControl display="flex" alignItems="center">
+                        <FormLabel htmlFor="email-alerts" mb="0" flexShrink={0}>
+                          Nhận kèm quà?
+                        </FormLabel>
+                        <Tooltip
+                          label="Một vài sản phẩm kèm theo nhận quà sẽ không mua được, nên test trước khi setup"
+                          aria-label="A tooltip"
+                          shouldWrapChildren
+                        >
+                          <Switch
+                            id="gift-recieve"
+                            onChange={handleGiftChange}
+                            value={gift}
+                          />
+                        </Tooltip>
+                      </FormControl>
+                    </Box>
                     <FormControl mr={2}>
                       <FormLabel>Giá tiền</FormLabel>
                       <NumberInput
@@ -447,7 +449,7 @@ const UserCard = ({
                       </FormHelperText>
                     </FormControl>
                     <Button
-                      colorScheme={isChecking ? "red" : "green"}
+                      colorScheme={isChecking ? 'red' : 'green'}
                       leftIcon={<BsClockFill />}
                       onClick={checkPrice}
                       flexShrink={0}

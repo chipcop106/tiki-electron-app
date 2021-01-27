@@ -22,6 +22,13 @@ const TokenRemain = ({ time, id }) => {
       const timer = getTimeRemain(accountInfo?.expires_at);
       setValue(timer);
       if (timer < 0) {
+        dispatch(
+          actions.loginAccount({
+            id,
+            username: accountInfo?.username,
+            password: accountInfo?.password,
+          })
+        );
         clearInterval(interval);
       }
     }, 1000);
@@ -30,18 +37,6 @@ const TokenRemain = ({ time, id }) => {
       clearInterval(interval);
     };
   }, []);
-
-  useEffect(() => {
-    if (value < 0) {
-      dispatch(
-        actions.loginAccount({
-          id,
-          username: accountInfo?.username,
-          password: accountInfo?.password,
-        })
-      );
-    }
-  }, [value]);
 
   return <strong>{value} phút</strong>;
 };

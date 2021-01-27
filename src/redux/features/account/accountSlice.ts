@@ -35,7 +35,7 @@ interface Account {
 }
 
 export interface AccountType {
-  accounts: Array<Account> | null;
+  accounts: Array<Account>;
   error: Error | boolean | string | null;
   loading: boolean;
   openModal: boolean;
@@ -63,7 +63,10 @@ const initialState: AccountType = {
   openModal: false,
   cartLoading: false,
   isAdding: false,
-  addError: null,
+  addError: {
+    isError: false,
+    message: '',
+  },
 };
 
 export const accountSlice = createSlice({
@@ -99,13 +102,11 @@ export const accountSlice = createSlice({
       state.error = null;
     },
     updateAccountSuccess: (state, { payload }) => {
-      state.accounts = [...state.accounts].map((account) => {
-        if (account.id === payload.id) {
-          account.username = payload.username;
-          account.password = payload.password;
-        }
-        return account;
-      });
+      const index = state.accounts.findIndex((acc) => acc.id === payload.id);
+      if (index > -1) {
+        state.accounts[index].username = payload.username;
+        state.accounts[index].password = payload.password;
+      }
       state.error = false;
       state.loading = false;
     },
@@ -115,12 +116,13 @@ export const accountSlice = createSlice({
     },
     loginAccount: (state, { payload }) => {},
     loginAccountSuccess: (state, { payload }) => {
-      state.accounts = [...state.accounts].map((account) => {
-        if (account.id === payload.id) {
-          return { ...account, ...payload };
-        }
-        return account;
-      });
+      const index = state.accounts.findIndex((acc) => acc.id === payload.id);
+      if (index > -1) {
+        state.accounts[index] = {
+          ...state.accounts[index],
+          ...payload,
+        };
+      }
     },
     setExpiredToken: (state, { payload }) => {
       state.accounts = [...state.accounts].map((account: Account) => {
@@ -140,16 +142,9 @@ export const accountSlice = createSlice({
       state.error = null;
     },
     getCartSuccess: (state, { payload }) => {
-      state.accounts = [...state.accounts].map((account: Account) => {
-        if (account.id === payload.id) {
-          return {
-            ...account,
-            cartItems: JSON.parse(payload.cartItems),
-            subTotal: payload.subTotal,
-          };
-        }
-        return account;
-      });
+      const index = state.accounts.findIndex((acc) => acc.id === payload.id);
+      state.accounts[index].cart.cartItems = payload.cartItems;
+      state.accounts[index].cart.subTotal = payload.subTotal;
       state.cartLoading = false;
     },
     getCartError: (state, { payload }) => {
@@ -160,26 +155,15 @@ export const accountSlice = createSlice({
       state.cartError = null;
     },
     deleteCartItemSuccess: (state, { payload }) => {
-      state.accounts = [...state.accounts].map((account: Account) => {
-        if (account.id === payload.id) {
-          const newCartItems = account.cart.cartItems.filter(
-            (item) => item.id !== payload.itemId
-          );
-
-          return {
-            ...account,
-            cart: {
-              ...account.cart,
-              cartItems: newCartItems,
-              subTotal: newCartItems.reduce(
-                (prev, next) => prev + next.subtotal,
-                0
-              ),
-            },
-          };
-        }
-        return account;
-      });
+      const index = state.accounts.findIndex((acc) => acc.id === payload.id);
+      const newCartItems = [...state.accounts[index].cart.cartItems].filter(
+        (item) => item.id !== payload.itemId
+      );
+      state.accounts[index].cart.cartItems = newCartItems;
+      state.accounts[index].cart.subTotal = newCartItems.reduce(
+        (prev, next) => prev + next.subtotal,
+        0
+      );
       state.cartError = null;
     },
     deleteCartItemFailed: (state, { payload }) => {
@@ -194,77 +178,57 @@ export const accountSlice = createSlice({
     },
 
     processBuyProduct: (state, { payload }) => {
-      state.accounts = [...state.accounts].map((account: Account) => {
-        if (account.id === payload.id) {
-          return { ...account, isProcessing: true };
-        }
-        return account;
-      });
+      const index = state.accounts.findIndex((acc) => acc.id === payload.id);
+      if (index > -1) {
+        state.accounts[index].isProcessing = true;
+      }
     },
     processBuySuccess: (state, { payload }) => {
-      state.accounts = [...state.accounts].map((account: Account) => {
-        if (account.id === payload.accountId) {
-          account.histories.push(payload);
-          return { ...account, isProcessing: false };
-        }
-        return account;
-      });
+      const index = state.accounts.findIndex(
+        (acc) => acc.id === payload.accountId
+      );
+      if (index > -1) {
+        state.accounts[index].histories.push(payload);
+        state.accounts[index].isProcessing = false;
+      }
     },
     deleteHistories: (state, { payload }) => {
-      state.accounts = [...state.accounts].map((account: Account) => {
-        if (account.id === payload) {
-          account.histories = [];
-        }
-        return account;
-      });
+      const index = state.accounts.findIndex((acc) => acc.id === payload);
+      if (index > -1) {
+        state.accounts[index].histories = [];
+      }
     },
     cancelOrder: (state, { payload }) => {},
     cancelOrderSuccess: (state, { payload }) => {
-      state.accounts = [...state.accounts].map((account: Account) => {
-        if (account.id === payload.id) {
-          account.histories = account.histories.map((item) => {
-            if (item.orderId === payload.orderId) {
-              item.status = false;
-            }
-            return item;
-          });
-        }
-        return account;
-      });
+      const index = state.accounts.findIndex((acc) => acc.id === payload.id);
+      const historyIndex = state.accounts[index].histories.findIndex(
+        (item) => item.orderId === payload.orderId
+      );
+      if (index > -1 && historyIndex > -1) {
+        state.accounts[index].histories[historyIndex].status = false;
+      }
     },
     checkPriceBuy: (state, { payload }) => {
-      state.accounts = [...state.accounts].map((account: Account) => {
-        if (account.id === payload.id) {
-          account.buyError = {
-            isError: false,
-            message: '',
-          };
-        }
-        return account;
-      });
+      const index = state.accounts.findIndex((acc) => acc.id === payload.id);
+      if (index > -1) {
+        state.accounts[index].buyError.message = '';
+        state.accounts[index].buyError.isError = false;
+      }
     },
     checkPriceBuySuccess: (state, { payload }) => {
-      state.accounts = [...state.accounts].map((account: Account) => {
-        if (account.id === payload.id) {
-          account.cart.cartItems = [];
-          account.buyError = {
-            isError: false,
-            message: 'Mua thành công !!',
-          };
-        }
-        return account;
-      });
+      const index = state.accounts.findIndex((acc) => acc.id === payload.id);
+      if (index > -1) {
+        state.accounts[index].cart.cartItems = [];
+        state.accounts[index].buyError.message = 'Mua thành công !!';
+        state.accounts[index].buyError.isError = false;
+      }
     },
     checkPriceBuyFailed: (state, { payload }) => {
-      state.accounts = [...state.accounts].map((account: Account) => {
-        if (account.id === payload.id) {
-          account.buyError = {
-            isError: true,
-            message: payload,
-          };
-        }
-        return account;
-      });
+      const index = state.accounts.findIndex((acc) => acc.id === payload.id);
+      if (index > -1) {
+        state.accounts[index].buyError.isError = true;
+        state.accounts[index].buyError.message = payload;
+      }
     },
     addCartProduct: (state, { payload }) => {
       state.isAdding = true;
@@ -272,24 +236,16 @@ export const accountSlice = createSlice({
         isError: false,
         message: '',
       };
-      return state;
     },
     addCartProductSuccess: (state, { payload }) => {
-      console.log({payload});
-      state.accounts = [...state.accounts].map((account: Account) => {
-        if (account.id === payload.id) {
-          console.log('matching nè');
-          return {
-            ...account,
-            cart: {
-              cartItems: [...account.cart.cartItems, JSON.parse(payload.item)],
-            },
-          };
-        }
-        return account;
-      });
+      const index = state.accounts.findIndex((acc) => acc.id === payload.id);
+      if (index > -1) {
+        state.accounts[index].cart.cartItems.push(payload.item);
+        state.accounts[index].cart.subTotal =
+          state.accounts[index].cart.subTotal + payload.item.subtotal;
+      }
+
       state.isAdding = false;
-      return state;
     },
     addCartProductFailed: (state, { payload }) => {
       state.isAdding = false;

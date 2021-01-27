@@ -24,6 +24,7 @@ const persistConfig = {
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 const sagaMiddleware = createSagaMiddleware();
+
 const middleware = [
   ...getDefaultMiddleware({
     immutableCheck: false,
@@ -34,6 +35,7 @@ const middleware = [
   }),
   sagaMiddleware,
 ];
+
 const store = configureStore({
   reducer: persistedReducer,
   middleware,
