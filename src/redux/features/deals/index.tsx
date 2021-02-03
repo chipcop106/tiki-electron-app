@@ -19,6 +19,10 @@ import {
   FormHelperText,
   FormLabel,
   Box,
+  useToast,
+  RadioGroup,
+  Stack,
+  Radio,
 } from '@chakra-ui/react';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -32,19 +36,31 @@ const Deals = () => {
   const [filterPrice, setFilterPrice] = useState(0);
   const [totalPage, setTotalPage] = useState(1);
   const [loading, setIsloading] = useState(false);
+  const [isCustomDeal, setIsCustomDeal] = useState('0');
+  const [apiUrl, setApiUrl] = useState('');
+  const [salePrice, setSalePrice] = useState(0);
   const accounts = useSelector((state: RootState) => state.account.accounts);
   const dispatch = useDispatch();
+  const toast = useToast();
 
   const getDealAPI = async (page) => {
+    const params = {};
+    const url =
+      isCustomDeal === '1'
+        ? apiUrl
+        : 'https://tiki.vn/api/v2/widget/deals/mix?page=1';
+    const urlSearch = new URLSearchParams(url.replace(/^[^_]+(?=\?)/gm, ''));
+    urlSearch.forEach((value, key) => {
+      params[key] = value;
+    });
+    console.log({ params });
     try {
-      const res = await instance.get(
-        'https://tiki.vn/api/v2/widget/deals/mix',
-        {
-          params: {
-            page,
-          },
-        }
-      );
+      const res = await instance.get(url, {
+        params: {
+          ...params,
+          page,
+        },
+      });
       if (res.data) {
         setTotalPage(res.data.paging.last_page);
         return res.data.data;
@@ -72,6 +88,12 @@ const Deals = () => {
             })
           );
         });
+    toast({
+      description: 'Mua hàng hoàn tất',
+      status: 'success',
+      duration: 2000,
+      isClosable: true,
+    });
   };
 
   const _reloadDeal = async () => {
@@ -92,13 +114,25 @@ const Deals = () => {
   };
 
   const renderListDeals = useCallback(() => {
-    return deals
-      .filter(
+    let filterItems = [];
+    if (salePrice > 0) {
+      filterItems = deals.filter(
+        (item) =>
+          item.deal_status === 'running' &&
+          Math.ceil((item.product.discount * 100) / item.product.list_price) >=
+            Math.ceil(Number(filterPrice) > 0 ? Number(filterPrice) : 0) &&
+          item.special_price === parseInt(salePrice)
+      );
+    } else {
+      filterItems = deals.filter(
         (item) =>
           item.deal_status === 'running' &&
           Math.ceil((item.product.discount * 100) / item.product.list_price) >=
             Math.ceil(Number(filterPrice) > 0 ? Number(filterPrice) : 0)
-      )
+      );
+    }
+
+    return filterItems
       .sort(
         (prev, next) =>
           Math.ceil((next.product.discount * 100) / next.product.list_price) -
@@ -141,7 +175,7 @@ const Deals = () => {
           </Td>
         </Tr>
       ));
-  }, [deals, filterPrice]);
+  }, [deals, filterPrice, salePrice]);
 
   useEffect(() => {
     _reloadDeal();
@@ -153,6 +187,24 @@ const Deals = () => {
 
   return (
     <>
+      <RadioGroup value={isCustomDeal} onChange={setIsCustomDeal}>
+        <Stack spacing={4} direction="row">
+          <Radio value="0">Hot deal</Radio>
+          <Radio value="1">Custom deal</Radio>
+        </Stack>
+      </RadioGroup>
+      {isCustomDeal === '1' && (
+        <FormControl id="url" my={2}>
+          <FormLabel>API endpoint:</FormLabel>
+          <Input
+            type="text"
+            value={apiUrl}
+            onChange={(e) => setApiUrl(e.target.value)}
+            placeholder="API url"
+          />
+        </FormControl>
+      )}
+
       <Flex
         justify="space-between"
         alignItems="center"
@@ -160,33 +212,42 @@ const Deals = () => {
         pos="sticky"
         top={-4}
         bgColor="white"
-        py={4}
         zIndex={4}
+        pb={4}
+        borderBottom={1}
+        borderBottomColor="gray.300"
+        borderBottomStyle="solid"
       >
-        <Button
-          colorScheme="blue"
-          onClick={_reloadDeal}
-          size="md"
-          isLoading={loading}
-          loadingText="Đang cập nhật"
-        >
-          Reload deal
-        </Button>
-        <InputGroup width={125}>
-          <InputLeftElement
-            pointerEvents="none"
-            color="black"
-            fontSize="0.85rem"
-            children="Tỉ lệ:"
-          />
-          <InputRightElement
-            pointerEvents="none"
-            color="gray.300"
-            fontSize="1.2em"
-            children="%"
-          />
-          <Input placeholder="0" onChange={_handlePercentChange} />
-        </InputGroup>
+        <Box mt={4}>
+          <Button
+            colorScheme="blue"
+            onClick={_reloadDeal}
+            size="md"
+            isLoading={loading}
+            loadingText="Đang cập nhật"
+          >
+            Reload deal
+          </Button>
+        </Box>
+        <Flex>
+          <FormControl id="percentage" mr={8}>
+            <FormLabel>Giảm lớn hơn</FormLabel>
+            <Input
+              placeholder="0%"
+              onChange={_handlePercentChange}
+              width={125}
+            />
+          </FormControl>
+          <FormControl id="email">
+            <FormLabel>Giá chính xác</FormLabel>
+            <Input
+              placeholder="0%"
+              onChange={(e) => setSalePrice(e.target.value)}
+              width={125}
+              value={salePrice}
+            />
+          </FormControl>
+        </Flex>
       </Flex>
 
       <Table>
