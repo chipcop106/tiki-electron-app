@@ -16,6 +16,7 @@ import {
   FcManager,
   FcPodiumWithAudience,
   FcSalesPerformance,
+  FcStumbleupon,
 } from 'react-icons/fc';
 import fs from 'fs';
 import path from 'path';
@@ -109,6 +110,20 @@ export default function Nav() {
                       variant="ghost"
                     >
                       Quản lý tài khoản
+                    </Button>
+                  </NavLink>
+                  <NavLink
+                    to="/deals"
+                    activeStyle={activeStyles}
+                    isActive={() => window.location.hash.indexOf('/deals') > -1}
+                  >
+                    <Button
+                      size="sm"
+                      colorScheme="navItem"
+                      variant="ghost"
+                      leftIcon={<FcStumbleupon />}
+                    >
+                      Hot deal
                     </Button>
                   </NavLink>
                 </Stack>
