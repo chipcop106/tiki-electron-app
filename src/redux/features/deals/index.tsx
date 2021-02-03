@@ -11,6 +11,14 @@ import {
   Select,
   Flex,
   Image,
+  InputGroup,
+  InputRightElement,
+  Input,
+  InputLeftElement,
+  FormControl,
+  FormHelperText,
+  FormLabel,
+  Box,
 } from '@chakra-ui/react';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -21,7 +29,7 @@ import { RootState } from '../rootReducer';
 
 const Deals = () => {
   const [deals, setDeals] = useState([]);
-  const [filterPrice, setFilterPrice] = useState(88000);
+  const [filterPrice, setFilterPrice] = useState(0);
   const [totalPage, setTotalPage] = useState(1);
   const [loading, setIsloading] = useState(false);
   const accounts = useSelector((state: RootState) => state.account.accounts);
@@ -29,14 +37,14 @@ const Deals = () => {
 
   const getDealAPI = async (page) => {
     try {
-      const res = await instance.get('https://tiki.vn/api/v2/events/deals', {
-        params: {
-          slug: 'tiki-sale-tet-2021',
-          tags: 'tet21_shocking_gayhr',
-          page,
-          type: 'normal_deal',
-        },
-      });
+      const res = await instance.get(
+        'https://tiki.vn/api/v2/widget/deals/mix',
+        {
+          params: {
+            page,
+          },
+        }
+      );
       if (res.data) {
         setTotalPage(res.data.paging.last_page);
         return res.data.data;
@@ -79,12 +87,22 @@ const Deals = () => {
     setIsloading(false);
   };
 
+  const _handlePercentChange = (e) => {
+    setFilterPrice(e.target.value);
+  };
+
   const renderListDeals = useCallback(() => {
     return deals
       .filter(
         (item) =>
           item.deal_status === 'running' &&
-          item.special_price === parseInt(filterPrice, 10)
+          Math.ceil((item.product.discount * 100) / item.product.list_price) >=
+            Math.ceil(Number(filterPrice) > 0 ? Number(filterPrice) : 0)
+      )
+      .sort(
+        (prev, next) =>
+          Math.ceil((next.product.discount * 100) / next.product.list_price) -
+          Math.ceil((prev.product.discount * 100) / prev.product.list_price)
       )
       .map((item) => (
         <Tr>
@@ -107,8 +125,11 @@ const Deals = () => {
               </Text>
             </Link>
           </Td>
+          <Td>{item.product.list_price}</Td>
           <Td>{item.special_price}</Td>
-          <Td>{item.progress.qty_remain}</Td>
+          <Td>
+            {Math.ceil((item.product.discount * 100) / item.product.list_price)}
+          </Td>
           <Td>
             <Button
               leftIcon={<IoCartOutline />}
@@ -151,14 +172,21 @@ const Deals = () => {
         >
           Reload deal
         </Button>
-        <Select
-          value={filterPrice}
-          onChange={(e) => setFilterPrice(e.target.value)}
-          width={150}
-        >
-          <option value="8000">8000</option>
-          <option value="88000">88000</option>
-        </Select>
+        <InputGroup width={125}>
+          <InputLeftElement
+            pointerEvents="none"
+            color="black"
+            fontSize="0.85rem"
+            children="Tỉ lệ:"
+          />
+          <InputRightElement
+            pointerEvents="none"
+            color="gray.300"
+            fontSize="1.2em"
+            children="%"
+          />
+          <Input placeholder="0" onChange={_handlePercentChange} />
+        </InputGroup>
       </Flex>
 
       <Table>
@@ -166,24 +194,13 @@ const Deals = () => {
           <Tr>
             <Th>Image</Th>
             <Th>Product name</Th>
-            <Th>Price sale</Th>
-            <Th>Còn lại</Th>
+            <Th>Giá gốc</Th>
+            <Th>Giá sale</Th>
+            <Th>% sale</Th>
             <Th />
           </Tr>
         </Thead>
-        <Tbody>
-          {loading ? (
-            <Tr>
-              <Td colSpan={5}>
-                <Text color="red.500" align="center">
-                  Đang tải dữ liệu
-                </Text>
-              </Td>
-            </Tr>
-          ) : (
-            deals && deals.length > 0 && renderListDeals()
-          )}
-        </Tbody>
+        <Tbody>{deals && deals.length > 0 && renderListDeals()}</Tbody>
       </Table>
     </>
   );
