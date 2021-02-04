@@ -1,6 +1,6 @@
-import { all, fork } from 'redux-saga/effects';
+import { all, fork, take } from 'redux-saga/effects';
 import dashboardSaga from './dashboardSaga';
-import accountSaga from './accountSaga';
+import accountSaga, { deleteCartWatcher } from './accountSaga';
 
 export default function* rootSaga() {
   yield all([

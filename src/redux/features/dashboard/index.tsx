@@ -237,15 +237,6 @@ const Dashboard: React.FC = () => {
                         <TokenRemain
                           time={account.expires_at}
                           id={account.id}
-                          renewToken={() =>
-                            dispatch(
-                              AccountActions.loginAccount({
-                                id: account.id,
-                                username: account.username,
-                                password: account.password,
-                              })
-                            )
-                          }
                         />
                       </Box>
                     )}

@@ -5,8 +5,10 @@ import {
   select,
   call,
   take,
+  delay,
 } from 'redux-saga/effects';
 import { v4 as uuidv4 } from 'uuid';
+import { createStandaloneToast } from '@chakra-ui/react';
 import { actions as accountActions } from '../features/account/accountSlice';
 import {
   login,
@@ -25,7 +27,42 @@ import {
   deleteCart,
 } from '../../api/cart';
 
-const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+const toast = createStandaloneToast();
+
+export const processBuy = async (params: {
+  access_token: string;
+  gift: boolean;
+  payment_method: string;
+}) => {
+  const { access_token, gift, payment_method } = params;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const userAddress = await getUserAddress({ access_token });
+      await setAddress({
+        access_token,
+        address_id: userAddress.data.data.find(
+          (item: any) => item.is_default === true
+        ).id,
+      });
+      await setPaymentMethod({
+        access_token,
+        payment_method,
+      });
+
+      if (gift) {
+        await setGiftNone({
+          access_token,
+        });
+      }
+      const resCheckout = await completeCheckOut({
+        access_token,
+        payment_method,
+      });
+      resolve(resCheckout);
+    } catch (e) {}
+  });
+};
 
 export function* loginAccount({ payload }) {
   try {
@@ -39,12 +76,16 @@ export function* loginAccount({ payload }) {
         payload: {
           ...resLogin.data,
           ...payload,
+          isLogin: true,
           cart: {
             cartItems: [],
             subTotal: 0,
           },
-          isLogin: true,
           isProcessing: false,
+          buyError: {
+            isError: false,
+            message: '',
+          },
         },
       });
     }
@@ -73,6 +114,10 @@ export function* addAccount({ payload }) {
           },
           isLogin: true,
           isProcessing: false,
+          buyError: {
+            isError: false,
+            message: '',
+          },
         },
       });
     } else {
@@ -126,23 +171,13 @@ export function* updateAccount({ payload }) {
   }
 }
 
-export function* processBuyProduct({ payload }) {
-  // eslint-disable-next-line @typescript-eslint/naming-convention
-  const {
-    access_token,
-    quantity,
-    productId: product_id,
-    payment_method,
-    gift,
-  } = payload;
+export function* processingBuy({ payload }) {
+  console.log('Dispatch processing');
+  const { access_token, payment_method, gift } = payload;
+  const cartData = yield call(getCartData, { access_token });
+  const { items } = cartData.data;
   try {
     const userAddress = yield call(getUserAddress, { access_token });
-    const cartData = yield call(getCartData, { access_token });
-    yield call(addToCart, {
-      product_id,
-      access_token,
-      quantity: quantity.toString(),
-    });
     yield call(setAddress, {
       access_token,
       address_id: userAddress.data.data.find(
@@ -163,6 +198,7 @@ export function* processBuyProduct({ payload }) {
       access_token,
       payment_method,
     });
+
     yield put({
       type: accountActions.processBuySuccess,
       payload: {
@@ -170,11 +206,73 @@ export function* processBuyProduct({ payload }) {
         id: uuidv4(),
         orderId:
           resCheckout?.data?.redirect_data?.order_code ?? 'Không có mã order',
-        nameProduct:
-          cartData?.data?.items[0]?.product_name ?? 'Không tìm thấy tên',
-        productId: product_id,
-        link: cartData?.data?.items[0]?.product_url ?? 'Không tìm thấy link',
-        quantity,
+        nameProduct: items[0].product_name ?? 'Không tìm thấy tên',
+        productId: items[0].product_id ?? 'Không tìm thấy productId',
+        link: items[0].product_url ?? 'Không tìm thấy link',
+        quantity: items[0].qty ?? 'Không tìm thấy số lượng',
+        status: true,
+        error: null,
+      },
+    });
+  } catch (error) {
+    yield put({
+      type: accountActions.processBuyFailed,
+      payload: {
+        accountId: payload.id,
+        id: uuidv4(),
+        nameProduct: '',
+        productId: items[0].product_id,
+        link: '',
+        quantity: items[0].qty,
+        status: false,
+        error:
+          error?.response?.data?.error?.message ?? 'Mua không thành công !!',
+      },
+    });
+  } finally {
+    yield put({
+      type: accountActions.cancelProcessBuy,
+      payload: {
+        accountId: payload.id,
+      },
+    });
+  }
+}
+
+export function* processBuyProduct({ payload }) {
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  const {
+    access_token,
+    quantity,
+    productId: product_id,
+    payment_method,
+    gift,
+  } = payload;
+
+  try {
+    yield call(addToCart, {
+      product_id,
+      access_token,
+      quantity: quantity.toString(),
+    });
+    const cartData = yield call(getCartData, { access_token });
+    const { items } = cartData.data;
+
+    const resBuy = yield call(processBuy, {
+      access_token,
+      payment_method,
+      gift,
+    });
+    yield put({
+      type: accountActions.processBuySuccess,
+      payload: {
+        accountId: payload.id,
+        id: uuidv4(),
+        orderId: resBuy?.data?.redirect_data?.order_code ?? 'Không có mã order',
+        nameProduct: items[0].product_name ?? 'Không tìm thấy tên',
+        productId: items[0].product_id ?? 'Không tìm thấy productId',
+        link: items[0].product_url ?? 'Không tìm thấy link',
+        quantity: items[0].qty ?? 'Không tìm thấy số lượng',
         status: true,
         error: null,
       },
@@ -182,7 +280,7 @@ export function* processBuyProduct({ payload }) {
   } catch (error) {
     console.log({ error });
     yield put({
-      type: accountActions.processBuySuccess,
+      type: accountActions.processBuyFailed,
       payload: {
         accountId: payload.id,
         id: uuidv4(),
@@ -199,30 +297,13 @@ export function* processBuyProduct({ payload }) {
 }
 
 export function* processBuyCart({ payload }) {
+  const { access_token, method: payment_method, gift } = payload;
+  const cartData = yield call(getCartData, { access_token });
   try {
-    const { access_token, id, method: payment_method, gift } = payload;
-    const userAddress = yield call(getUserAddress, { access_token });
-    const cartData = yield call(getCartData, { access_token });
-    yield call(setAddress, {
-      access_token,
-      address_id: userAddress.data.data.find(
-        (item: any) => item.is_default === true
-      ).id,
-    });
-    yield call(setPaymentMethod, {
+    const resBuy = yield call(processBuy, {
       access_token,
       payment_method,
       gift,
-    });
-
-    if (gift) {
-      yield call(setGiftNone, {
-        access_token,
-      });
-    }
-    yield call(completeCheckOut, {
-      access_token,
-      payment_method,
     });
     yield put({
       type: accountActions.checkPriceBuySuccess,
@@ -274,7 +355,7 @@ export function* getCart({ payload }) {
           type: accountActions.getCartSuccess,
           payload: {
             id,
-            cartItems: newItems,
+            cartItems: JSON.stringify(newItems),
             subTotal: subtotal,
           },
         });
@@ -304,11 +385,23 @@ export function* deleteCartItem({ payload }) {
         type: accountActions.deleteCartItemSuccess,
         payload,
       });
+      toast({
+        description: 'Delete successfully !',
+        status: 'success',
+        duration: 2500,
+        isClosable: true,
+      });
     }
   } catch (error) {
     yield put({
       type: accountActions.deleteCartItemFailed,
       payload: error?.response?.error?.message ?? 'Lỗi khi lấy dữ liệu cart',
+    });
+    toast({
+      description: 'Delete error !',
+      status: 'error',
+      duration: 2500,
+      isClosable: true,
     });
   }
 }
@@ -331,7 +424,7 @@ export function* addCartProduct({ payload }) {
       type: accountActions.addCartProductSuccess,
       payload: {
         ...payload,
-        item: {
+        item: JSON.stringify({
           id: newItem.id,
           subtotal: newItem.subtotal,
           price: newItem.price,
@@ -339,7 +432,7 @@ export function* addCartProduct({ payload }) {
           product_name: newItem.product_name,
           product_url: newItem.product_url,
           qty: newItem.qty,
-        },
+        }),
       },
     });
   } catch (error) {
@@ -375,6 +468,9 @@ export default [
   },
   function* processBuyCartWatcher() {
     yield takeEvery(accountActions.checkPriceBuy.type, processBuyCart);
+  },
+  function* processingBuyWatcher() {
+    yield takeEvery(accountActions.processingBuy, processingBuy);
   },
   function* addCartProductWatcher() {
     yield takeEvery(accountActions.addCartProduct.type, addCartProduct);

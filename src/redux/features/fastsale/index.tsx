@@ -25,14 +25,16 @@ import {
   FormLabel,
   Tooltip,
   Divider,
+  useToast,
 } from '@chakra-ui/react';
 
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
 import { AiOutlineDrag, AiOutlineExpandAlt } from 'react-icons/ai';
 import UserCard from '../../../components/UserCard/UserCard';
-import { actions as AccountActions } from '../account/accountSlice';
+import { actions, actions as AccountActions } from '../account/accountSlice';
 import { RootState } from '../rootReducer';
 import TokenRemain from '../../../components/TokenRemain';
+import { getTimeRemain } from '../../../utils';
 
 const FastSale: React.FC = () => {
   const [collapse, setCollapse] = useState(true);
@@ -43,6 +45,7 @@ const FastSale: React.FC = () => {
   const [gift, setGift] = useState(false);
   const accounts = useSelector((state: RootState) => state.account.accounts);
   const dispatch = useDispatch();
+  const toast = useToast();
 
   const _toggleCollapse = (): void => {
     if (collapse) {
@@ -73,6 +76,12 @@ const FastSale: React.FC = () => {
           })
         );
       });
+    toast({
+      description: 'Login all success !',
+      status: 'success',
+      duration: 2500,
+      isClosable: true,
+    });
   };
 
   const handleChangeProductId = (e) => {
@@ -104,6 +113,34 @@ const FastSale: React.FC = () => {
             })
           );
         });
+    toast({
+      description: 'Add cart success all account !',
+      status: 'success',
+      duration: 2500,
+      isClosable: true,
+    });
+  };
+
+  const getCartMultipleAccount = (e) => {
+    e.preventDefault();
+    accounts &&
+      accounts.length > 0 &&
+      [...accounts]
+        .filter((item) => item.isLogin === true)
+        .map((acc) => {
+          dispatch(
+            AccountActions.getCart({
+              access_token: acc.access_token,
+              id: acc.id,
+            })
+          );
+        });
+    toast({
+      description: 'Update cart success !',
+      status: 'success',
+      duration: 2500,
+      isClosable: true,
+    });
   };
 
   useEffect(() => {
@@ -196,6 +233,7 @@ const FastSale: React.FC = () => {
               </Box>
             </Flex>
           </form>
+          <Button colorScheme={`purple`} onClick={getCartMultipleAccount} size={`sm`}>Cập nhật giỏ hàng</Button>
         </Stack>
       </Box>
       <Divider />

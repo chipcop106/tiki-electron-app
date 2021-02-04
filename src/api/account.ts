@@ -24,6 +24,22 @@ export const getUserAddress = async (params: AccessToken) => {
   });
 };
 
+export const getOrderLists = async (params: {
+  page: number;
+  limit: number;
+  access_token: string;
+}) => {
+  return instance.get('/me/orders', {
+    headers: {
+      'x-access-token': params.access_token,
+    },
+    params: {
+      page: params.page,
+      limit: params.limit,
+    },
+  });
+};
+
 export const cancelOrder = async (params: CancelOrderPayload) => {
   return instance.post(
     `me/orders/${params.orderId}/cancel`,

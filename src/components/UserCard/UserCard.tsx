@@ -32,6 +32,7 @@ import {
   AlertIcon,
   AlertTitle,
   AlertDescription,
+  useToast
 } from '@chakra-ui/react';
 import styled from '@emotion/styled';
 import { AiOutlineDelete, AiOutlineFileAdd } from 'react-icons/ai';
@@ -82,6 +83,7 @@ const UserCard = ({
   const [priceCheck, setPriceCheck] = useState(0);
   const [isChecking, setIsChecking] = useState(false);
   const dispatch = useDispatch();
+  const toast = useToast();
 
   const loginAccount = () => {
     dispatch(
@@ -134,15 +136,28 @@ const UserCard = ({
         access_token,
         id,
         itemId,
+        onSuccess: () =>  toast({
+          description: 'Delete successfully !',
+          status: "success",
+          duration: 2500,
+          isClosable: true,
+        }),
+        onError: () =>  toast({
+          description: 'Delete error !',
+          status: "error",
+          duration: 2500,
+          isClosable: true,
+        })
       })
     );
   };
+  const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
   const addItemToCart = () => {};
 
   const deleteAllCart = () => {
     cart.cartItems.length > 0 &&
-      cart.cartItems.map((item) => {
+      cart.cartItems.map(async (item) => {
         dispatch(
           actions.deleteCartItem({
             id,
@@ -151,6 +166,12 @@ const UserCard = ({
           })
         );
       });
+    toast({
+      description: 'Delete completed !',
+      status: "success",
+      duration: 2500,
+      isClosable: true,
+    });
   };
 
   const checkPrice = async () => {
@@ -187,7 +208,12 @@ const UserCard = ({
   }, [isChecking]);
 
   useEffect(() => {
-    getCartByAccount();
+    dispatch(
+      actions.getCart({
+        access_token,
+        id,
+      })
+    );
   }, []);
 
   return (
@@ -275,6 +301,7 @@ const UserCard = ({
                     colorScheme="red"
                     size="sm"
                     onClick={deleteAllCart}
+                    disabled
                   >
                     Xóa giỏ hàng
                   </Button>
@@ -492,9 +519,7 @@ const UserCard = ({
                             size="xs"
                             colorScheme="red"
                             variant="ghost"
-                            onClick={() =>
-                              handleCancelOrder(id, access_token, item.orderId)
-                            }
+                            onClick={() => handleCancelOrder(item.orderId)}
                           >
                             Cancel
                           </Button>

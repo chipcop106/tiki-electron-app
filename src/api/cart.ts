@@ -1,4 +1,7 @@
+import { call, put } from 'redux-saga/effects';
 import instance from './instance';
+import { actions as accountActions } from '../redux/features/account/accountSlice';
+import { getUserAddress } from './account';
 
 const PATH = 'carts';
 
@@ -83,6 +86,7 @@ export const setGiftNone = async (params: AccessToken) => {
   );
 };
 
+
 export const completeCheckOut = async (params: {
   payment_method: string | 'cod';
   access_token: string;
@@ -117,6 +121,7 @@ export const deleteCart = async (params: {
     },
   });
 };
+
 
 interface AddToCartPayload extends AccessToken {
   product_id: string;

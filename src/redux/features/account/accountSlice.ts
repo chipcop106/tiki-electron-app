@@ -31,7 +31,7 @@ interface Account {
   buyError: {
     isError: boolean;
     message: string;
-  } | null;
+  };
 }
 
 export interface AccountType {
@@ -143,8 +143,9 @@ export const accountSlice = createSlice({
     },
     getCartSuccess: (state, { payload }) => {
       const index = state.accounts.findIndex((acc) => acc.id === payload.id);
-      state.accounts[index].cart.cartItems = payload.cartItems;
-      state.accounts[index].cart.subTotal = payload.subTotal;
+      const { cartItems, subTotal } = payload;
+      state.accounts[index].cart.cartItems = JSON.parse(cartItems);
+      state.accounts[index].cart.subTotal = subTotal;
       state.cartLoading = false;
     },
     getCartError: (state, { payload }) => {
@@ -183,6 +184,9 @@ export const accountSlice = createSlice({
         state.accounts[index].isProcessing = true;
       }
     },
+    processingBuy: (state, { payload }) => {
+      console.log('process buy nè');
+    },
     processBuySuccess: (state, { payload }) => {
       const index = state.accounts.findIndex(
         (acc) => acc.id === payload.accountId
@@ -192,6 +196,16 @@ export const accountSlice = createSlice({
         state.accounts[index].isProcessing = false;
       }
     },
+    processBuyFailed: (state, { payload }) => {
+      const index = state.accounts.findIndex(
+        (acc) => acc.id === payload.accountId
+      );
+      if (index > -1) {
+        state.accounts[index].histories.push(payload);
+        state.accounts[index].isProcessing = false;
+      }
+    },
+    cancelProcessBuy: (state, { payload }) => {},
     deleteHistories: (state, { payload }) => {
       const index = state.accounts.findIndex((acc) => acc.id === payload);
       if (index > -1) {
@@ -239,10 +253,11 @@ export const accountSlice = createSlice({
     },
     addCartProductSuccess: (state, { payload }) => {
       const index = state.accounts.findIndex((acc) => acc.id === payload.id);
+      const item = JSON.parse(payload.item);
       if (index > -1) {
-        state.accounts[index].cart.cartItems.push(payload.item);
+        state.accounts[index].cart.cartItems.push(item);
         state.accounts[index].cart.subTotal =
-          state.accounts[index].cart.subTotal + payload.item.subtotal;
+          state.accounts[index].cart.subTotal + item.subtotal;
       }
 
       state.isAdding = false;
