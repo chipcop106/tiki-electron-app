@@ -192,7 +192,7 @@ export const accountSlice = createSlice({
         (acc) => acc.id === payload.accountId
       );
       if (index > -1) {
-        state.accounts[index].histories.push(payload);
+        //   state.accounts[index].histories.push(payload);
         state.accounts[index].isProcessing = false;
       }
     },
@@ -201,7 +201,7 @@ export const accountSlice = createSlice({
         (acc) => acc.id === payload.accountId
       );
       if (index > -1) {
-        state.accounts[index].histories.push(payload);
+        //  state.accounts[index].histories.push(payload);
         state.accounts[index].isProcessing = false;
       }
     },
@@ -209,7 +209,7 @@ export const accountSlice = createSlice({
     deleteHistories: (state, { payload }) => {
       const index = state.accounts.findIndex((acc) => acc.id === payload);
       if (index > -1) {
-        state.accounts[index].histories = [];
+        // state.accounts[index].histories = [];
       }
     },
     cancelOrder: (state, { payload }) => {},
@@ -220,6 +220,16 @@ export const accountSlice = createSlice({
       );
       if (index > -1 && historyIndex > -1) {
         state.accounts[index].histories[historyIndex].status = false;
+      }
+    },
+    getOrders: (state, { payload }) => {},
+    getOrdersSuccess: (state, { payload }) => {
+      const { accountId, histories } = payload;
+      const index = state.accounts.findIndex((acc) => acc.id === accountId);
+      console.log({ histories });
+      console.log(state.accounts[index]);
+      if (index > -1) {
+        state.accounts[index].histories = histories;
       }
     },
     checkPriceBuy: (state, { payload }) => {

@@ -32,7 +32,7 @@ import {
   AlertIcon,
   AlertTitle,
   AlertDescription,
-  useToast
+  useToast,
 } from '@chakra-ui/react';
 import styled from '@emotion/styled';
 import { AiOutlineDelete, AiOutlineFileAdd } from 'react-icons/ai';
@@ -41,6 +41,7 @@ import { BsClockFill } from 'react-icons/bs';
 import { GiShoppingCart } from 'react-icons/gi';
 import alertify from 'alertifyjs';
 import CurrencyFormat from 'react-currency-format';
+import { IoNewspaperOutline } from 'react-icons/io5';
 import TokenRemain from '../TokenRemain';
 import {
   actions as AccountActions,
@@ -99,12 +100,18 @@ const UserCard = ({
     dispatch(actions.setExpiredToken(id));
   };
 
-  const deleteHistories = () => {
-    dispatch(actions.deleteHistories(id));
+  const getOrders = () => {
+    dispatch(
+      actions.getOrders({
+        id,
+        username,
+        access_token,
+      })
+    );
   };
 
-  const handleCancelOrder = (orderId) => {
-    dispatch(actions.cancelOrder({ id, access_token, orderId }));
+  const handleCancelOrder = async (orderId) => {
+    await dispatch(actions.cancelOrder({ id, access_token, orderId }));
   };
 
   const handleGiftChange = (e) => {
@@ -136,18 +143,20 @@ const UserCard = ({
         access_token,
         id,
         itemId,
-        onSuccess: () =>  toast({
-          description: 'Delete successfully !',
-          status: "success",
-          duration: 2500,
-          isClosable: true,
-        }),
-        onError: () =>  toast({
-          description: 'Delete error !',
-          status: "error",
-          duration: 2500,
-          isClosable: true,
-        })
+        onSuccess: () =>
+          toast({
+            description: 'Delete successfully !',
+            status: 'success',
+            duration: 2500,
+            isClosable: true,
+          }),
+        onError: () =>
+          toast({
+            description: 'Delete error !',
+            status: 'error',
+            duration: 2500,
+            isClosable: true,
+          }),
       })
     );
   };
@@ -168,7 +177,7 @@ const UserCard = ({
       });
     toast({
       description: 'Delete completed !',
-      status: "success",
+      status: 'success',
       duration: 2500,
       isClosable: true,
     });
@@ -314,12 +323,12 @@ const UserCard = ({
                 </Heading>
                 <Box ml={4} flexShrink={0}>
                   <Button
-                    leftIcon={<AiOutlineDelete />}
-                    colorScheme="red"
+                    leftIcon={<IoNewspaperOutline />}
+                    colorScheme="yellow"
                     size="sm"
-                    onClick={deleteHistories}
+                    onClick={getOrders}
                   >
-                    Xóa lịch sử
+                    Lấy lịch sử mua hàng
                   </Button>
                 </Box>
               </>
@@ -492,9 +501,9 @@ const UserCard = ({
             <Table>
               <Thead>
                 <Tr>
-                  <Th>Id sản phẩm</Th>
-                  <Th>Link</Th>
-                  <Th>SL Mua</Th>
+                  <Th>Id order</Th>
+                  <Th>Sản phẩm</Th>
+                  <Th>Tổng tiền</Th>
                   <Th>Trạng thái</Th>
                   <Th />
                 </Tr>
@@ -503,23 +512,25 @@ const UserCard = ({
                 {histories.length > 0 ? (
                   histories.map((item) => (
                     <Tr key={`${item.id}`}>
-                      <Td>{item.productId}</Td>
-                      <Td>{item.link}</Td>
-                      <Td>{item.quantity}</Td>
+                      <Td>{item.id}</Td>
+                      <Td>{item.description}</Td>
+                      <Td>{item.grand_total}</Td>
                       <Td>
-                        {item.status ? (
+                        {item.status === 'canceled' ? (
+                          <Badge colorScheme="red">Đã hủy</Badge>
+                        ) : item.status === 'cho_in' ? (
                           <Badge colorScheme="green">Thành công</Badge>
                         ) : (
-                          <Badge colorScheme="red">Thất bại</Badge>
+                          <Badge colorScheme="yellow">{item.status_text}</Badge>
                         )}
                       </Td>
                       <Td>
-                        {item.status && (
+                        {item.status !== 'canceled' && (
                           <Button
                             size="xs"
                             colorScheme="red"
                             variant="ghost"
-                            onClick={() => handleCancelOrder(item.orderId)}
+                            onClick={() => handleCancelOrder(item.id)}
                           >
                             Cancel
                           </Button>

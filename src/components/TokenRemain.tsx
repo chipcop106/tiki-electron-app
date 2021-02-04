@@ -3,7 +3,7 @@ import { differenceInMinutes } from 'date-fns';
 import { useDispatch, useSelector } from 'react-redux';
 import { actions } from '../redux/features/account/accountSlice';
 import { RootState } from '../redux/features/rootReducer';
-import {getTimeRemain} from '../utils';
+import { getTimeRemain } from '../utils';
 
 const TokenRemain = ({ time, id }) => {
   const accountInfo = useSelector(
@@ -17,7 +17,7 @@ const TokenRemain = ({ time, id }) => {
   useEffect(() => {
     const interval = setInterval(() => {
       const minutes = getTimeRemain(time);
-      if (minutes <= 0) {
+      if (minutes <= 1) {
         dispatch(
           actions.loginAccount({
             id,
@@ -32,7 +32,7 @@ const TokenRemain = ({ time, id }) => {
     return () => {
       clearInterval(interval);
     };
-  }, []);
+  }, [time]);
 
   return <strong>{getTimeRemain(time)} phút</strong>;
 };

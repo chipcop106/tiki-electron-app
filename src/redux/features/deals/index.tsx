@@ -118,7 +118,6 @@ const Deals = () => {
     if (salePrice > 0) {
       filterItems = deals.filter(
         (item) =>
-          item.deal_status === 'running' &&
           Math.ceil((item.product.discount * 100) / item.product.list_price) >=
             Math.ceil(Number(filterPrice) > 0 ? Number(filterPrice) : 0) &&
           item.special_price === parseInt(salePrice)
@@ -126,12 +125,11 @@ const Deals = () => {
     } else {
       filterItems = deals.filter(
         (item) =>
-          item.deal_status === 'running' &&
           Math.ceil((item.product.discount * 100) / item.product.list_price) >=
-            Math.ceil(Number(filterPrice) > 0 ? Number(filterPrice) : 0)
+          Math.ceil(Number(filterPrice) > 0 ? Number(filterPrice) : 0)
       );
     }
-
+    console.log({ filterItems });
     return filterItems
       .sort(
         (prev, next) =>

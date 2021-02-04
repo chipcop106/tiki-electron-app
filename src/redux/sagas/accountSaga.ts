@@ -14,6 +14,7 @@ import {
   login,
   getUserAddress,
   cancelOrder as cancelOrderById,
+  getOrderLists,
 } from '../../api/account';
 import { getProductInfo } from '../../api/product';
 
@@ -327,10 +328,35 @@ export function* cancelOrder({ payload }) {
       orderId: payload.orderId,
     });
     if (res.data) {
-      yield put({ type: accountActions.cancelOrderSuccess, payload });
+      const orders = yield call(getOrderLists, {
+        access_token: payload.access_token,
+        page: 1,
+        limit: 5,
+      });
+      if (orders.data) {
+        yield put({
+          type: accountActions.getOrdersSuccess,
+          payload: {
+            accountId: payload.id,
+            access_token: payload.access_token,
+            histories: orders.data.data,
+          },
+        });
+      }
+      toast({
+        description: `Hủy đơn hàng ${payload.orderId} thành công !!`,
+        status: 'success',
+      });
     }
   } catch (error) {
     console.log({ error });
+    toast({
+      description: `${payload.orderId}: ${
+        error?.response?.error?.message ??
+        `Hủy đơn hàng ${payload.orderId} thất bại !`
+      }`,
+      status: 'error',
+    });
   }
 }
 
@@ -444,6 +470,35 @@ export function* addCartProduct({ payload }) {
   }
 }
 
+export function* getOrders({ payload }) {
+  const { id, access_token, username } = payload;
+  try {
+    const res = yield call(getOrderLists, { access_token, page: 1, limit: 5 });
+    if (res.data) {
+      yield put({
+        type: accountActions.getOrdersSuccess,
+        payload: {
+          accountId: id,
+          access_token,
+          histories: res.data.data,
+        },
+      });
+      toast({
+        description: `Lấy lịch sử ${username} thành công`,
+        status: 'success',
+      });
+    }
+  } catch (e) {
+    console.log({ e });
+    toast({
+      description: e?.response?.error?.message
+        ? `Lấy lịch sử ${username} ${e.response.error.message}`
+        : `Lấy lịch sử ${username} không thành công !`,
+      status: 'error',
+    });
+  }
+}
+
 export default [
   function* loginAccountWatcher() {
     yield takeEvery(accountActions.loginAccount.type, loginAccount);
@@ -456,6 +511,9 @@ export default [
   },
   function* cancelOrderWatcher() {
     yield takeLatest(accountActions.cancelOrder.type, cancelOrder);
+  },
+  function* getOrdersWatcher() {
+    yield takeEvery(accountActions.getOrders.type, getOrders);
   },
   function* processBuyProductMultipleWatcher() {
     yield takeEvery(accountActions.processBuyProduct.type, processBuyProduct);
