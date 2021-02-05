@@ -23,6 +23,7 @@ import {
   RadioGroup,
   Stack,
   Radio,
+  TableCaption,
 } from '@chakra-ui/react';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -43,7 +44,7 @@ const Deals = () => {
   const dispatch = useDispatch();
   const toast = useToast();
 
-  const getDealAPI = async (page) => {
+  const getDealAPI = async (page, tagId) => {
     const params = {};
     const url =
       isCustomDeal === '1'
@@ -53,12 +54,12 @@ const Deals = () => {
     urlSearch.forEach((value, key) => {
       params[key] = value;
     });
-    console.log({ params });
     try {
       const res = await instance.get(url, {
         params: {
           ...params,
           page,
+          tag_id: tagId,
         },
       });
       if (res.data) {
@@ -97,13 +98,17 @@ const Deals = () => {
   };
 
   const _reloadDeal = async () => {
-    let page = 1;
+    let tagId = 1;
     let totalDeals = [];
     setIsloading(true);
-    while (page <= totalPage) {
-      const data = await getDealAPI(page);
-      totalDeals = [...totalDeals, ...data];
-      page++;
+    while (tagId <= 10) {
+      let page = 1;
+      while (page <= totalPage) {
+        const data = await getDealAPI(page, tagId);
+        totalDeals = [...totalDeals, ...data];
+        page++;
+      }
+      tagId++;
     }
     setDeals(totalDeals);
     setIsloading(false);
@@ -118,18 +123,17 @@ const Deals = () => {
     if (salePrice > 0) {
       filterItems = deals.filter(
         (item) =>
-          Math.ceil((item.product.discount * 100) / item.product.list_price) >=
+          item.discount_percent >=
             Math.ceil(Number(filterPrice) > 0 ? Number(filterPrice) : 0) &&
           item.special_price === parseInt(salePrice)
       );
     } else {
       filterItems = deals.filter(
         (item) =>
-          Math.ceil((item.product.discount * 100) / item.product.list_price) >=
+          item.discount_percent >=
           Math.ceil(Number(filterPrice) > 0 ? Number(filterPrice) : 0)
       );
     }
-    console.log({ filterItems });
     return filterItems
       .sort(
         (prev, next) =>
@@ -159,9 +163,7 @@ const Deals = () => {
           </Td>
           <Td>{item.product.list_price}</Td>
           <Td>{item.special_price}</Td>
-          <Td>
-            {Math.ceil((item.product.discount * 100) / item.product.list_price)}
-          </Td>
+          <Td>{item.discount_percent}</Td>
           <Td>
             <Button
               leftIcon={<IoCartOutline />}
@@ -249,6 +251,15 @@ const Deals = () => {
       </Flex>
 
       <Table>
+        <TableCaption placement="top">
+          Tổng sản phẩm:{' '}
+          <strong>
+            <Text color="red.500" as="span">
+              {deals.length}
+            </Text>{' '}
+            sản phẩm
+          </strong>
+        </TableCaption>
         <Thead>
           <Tr>
             <Th>Image</Th>
