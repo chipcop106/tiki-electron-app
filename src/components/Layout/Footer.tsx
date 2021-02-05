@@ -20,7 +20,7 @@ export default function Footer() {
         fontSize="xs"
       >
         <Box>
-          <Text>Developer by heaven</Text>
+          <Text>Developer by Dat Coder</Text>
         </Box>
         <Box mt={0}>
           <Text mt={0}>Email: vietdat106@gmail.com</Text>
