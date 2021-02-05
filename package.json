@@ -97,7 +97,7 @@
     "publish": {
       "provider": "github",
       "owner": "chipcop106",
-      "repo": "tiki-electron-app",
+      "repo": "tiki-electron-app"
     }
   },
   "repository": {
