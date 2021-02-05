@@ -249,7 +249,6 @@ const Deals = () => {
           </FormControl>
         </Flex>
       </Flex>
-      <Text>Show test updated</Text>
       <Table>
         <TableCaption placement="top">
           Tổng sản phẩm:{' '}
