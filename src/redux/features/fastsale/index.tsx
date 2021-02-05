@@ -197,31 +197,7 @@ const FastSale: React.FC = () => {
                   </NumberInputStepper>
                 </NumberInput>
               </Box>
-              {/* <Box width={150}> */}
-              {/*  <Select size="sm" value={method} onChange={handleChangeMethod}> */}
-              {/*    <option value="cod">COD</option> */}
-              {/*    <option value="momo">Momo</option> */}
-              {/*    <option value="cybersource">Visa / Master card</option> */}
-              {/*  </Select> */}
-              {/* </Box> */}
-              {/* <Box mx={4} flexShrink={0}> */}
-              {/*  <FormControl display="flex" alignItems="center"> */}
-              {/*    <FormLabel htmlFor="email-alerts" mb="0" flexShrink={0}> */}
-              {/*      Nhận kèm quà? */}
-              {/*    </FormLabel> */}
-              {/*    <Tooltip */}
-              {/*      label="Một vài sản phẩm kèm theo nhận quà sẽ không mua được, nên test trước khi setup" */}
-              {/*      aria-label="A tooltip" */}
-              {/*      shouldWrapChildren */}
-              {/*    > */}
-              {/*      <Switch */}
-              {/*        id="gift-recieve" */}
-              {/*        onChange={handleGiftChange} */}
-              {/*        value={gift} */}
-              {/*      /> */}
-              {/*    </Tooltip> */}
-              {/*  </FormControl> */}
-              {/* </Box> */}
+
               <Box>
                 <Button
                   colorScheme="blue"
@@ -233,7 +209,13 @@ const FastSale: React.FC = () => {
               </Box>
             </Flex>
           </form>
-          <Button colorScheme={`purple`} onClick={getCartMultipleAccount} size={`sm`}>Cập nhật giỏ hàng</Button>
+          <Button
+            colorScheme="purple"
+            onClick={getCartMultipleAccount}
+            size="sm"
+          >
+            Cập nhật giỏ hàng
+          </Button>
         </Stack>
       </Box>
       <Divider />
