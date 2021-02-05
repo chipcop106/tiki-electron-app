@@ -98,8 +98,6 @@
       "provider": "github",
       "owner": "chipcop106",
       "repo": "tiki-electron-app",
-      "private": true,
-      "token": "c4be8a37bed124944212ed85e3b0062ef7ec4a83"
     }
   },
   "repository": {
