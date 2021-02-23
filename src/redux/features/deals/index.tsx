@@ -28,6 +28,7 @@ import {
 import React, { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { IoCartOutline } from 'react-icons/io5';
+import CurrencyFormat from 'react-currency-format';
 import instance from '../../../api/instance';
 import { actions as AccountActions } from '../account/accountSlice';
 import { RootState } from '../rootReducer';
@@ -38,7 +39,9 @@ const Deals = () => {
   const [totalPage, setTotalPage] = useState(1);
   const [loading, setIsloading] = useState(false);
   const [isCustomDeal, setIsCustomDeal] = useState('0');
-  const [apiUrl, setApiUrl] = useState('');
+  const [apiUrl, setApiUrl] = useState(
+    'https://tiki.vn/api/v2/widget/deals/mix?page=1&tag_id=1&time_id=2'
+  );
   const [salePrice, setSalePrice] = useState(0);
   const accounts = useSelector((state: RootState) => state.account.accounts);
   const dispatch = useDispatch();
@@ -154,6 +157,7 @@ const Deals = () => {
             <Link
               href={`https://tiki.vn/${item.product.url_path}`}
               target="_blank"
+              rel="noopener"
               mb={2}
             >
               <Text maxW={400} isTruncated>
@@ -161,8 +165,26 @@ const Deals = () => {
               </Text>
             </Link>
           </Td>
-          <Td>{item.product.list_price}</Td>
-          <Td>{item.special_price}</Td>
+          <Td>
+            <CurrencyFormat
+              value={item.product.list_price}
+              displayType="text"
+              thousandSeparator
+              renderText={(value) => <Text>{value}</Text>}
+            />
+          </Td>
+          <Td>
+            <CurrencyFormat
+              value={item.special_price}
+              displayType="text"
+              thousandSeparator
+              renderText={(value) => (
+                <Text fontWeight="semibold" color="red.500">
+                  {value}
+                </Text>
+              )}
+            />
+          </Td>
           <Td>{item.discount_percent}</Td>
           <Td>
             <Button
