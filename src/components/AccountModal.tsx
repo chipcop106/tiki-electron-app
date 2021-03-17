@@ -17,10 +17,10 @@ import {
   AlertTitle,
   AlertDescription,
   CloseButton,
+  Switch,
 } from '@chakra-ui/react';
 import React, { useEffect, useState } from 'react';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import { dialog } from 'electron';
 import { actions } from '../redux/features/account/accountSlice';
 
 function PasswordInput({ onChange, value }) {
@@ -57,6 +57,8 @@ const AccountModal = ({
 }) => {
   const [username, setUsername] = useState(initialValue.username);
   const [password, setPassword] = useState(initialValue.password);
+  const [otp, setOtp] = useState('');
+  const [isOtpAccount, setIsOtpAccount] = useState(false);
   const account = useSelector((state) => state.account, shallowEqual);
 
   const dispatch = useDispatch();
@@ -69,6 +71,10 @@ const AccountModal = ({
     setUsername(e.target.value);
   };
 
+  const changeOtp = (e) => {
+    setOtp(e.target.value);
+  };
+
   const onSubmit = (e) => {
     e.preventDefault();
 
@@ -77,7 +83,7 @@ const AccountModal = ({
         alert('Tài khoản đã tồn tại trong hệ thống');
         return false;
       }
-      dispatch(actions.addAccount({ username, password }));
+      dispatch(actions.addAccount({ username, password, otp_code: otp }));
     }
     type === 'edit' &&
       dispatch(
@@ -96,6 +102,10 @@ const AccountModal = ({
   useEffect(() => {
     dispatch(actions.clearError());
   }, []);
+
+  useEffect(() => {
+    setOtp('');
+  }, [isOtpAccount]);
 
   return (
     <>
@@ -127,6 +137,26 @@ const AccountModal = ({
                 <FormLabel>Mật khẩu</FormLabel>
                 <PasswordInput value={password} onChange={changePassword} />
               </FormControl>
+              <FormControl display="flex" alignItems="center" mt={4}>
+                <FormLabel htmlFor="otp-code" mb="0">
+                  Is OTP account ?
+                </FormLabel>
+                <Switch
+                  id="otp-code"
+                  size="lg"
+                  onChange={(e) => setIsOtpAccount(e.target.checked)}
+                />
+              </FormControl>
+              {isOtpAccount && (
+                <FormControl mt={4}>
+                  <Input
+                    placeholder="Nhập mã OTP trên điện thoại"
+                    value={otp}
+                    onChange={changeOtp}
+                  />
+                </FormControl>
+              )}
+
               {account.error && account.error !== null && (
                 <Alert status={account.error ? 'error' : 'success'} mt={4}>
                   <AlertIcon />

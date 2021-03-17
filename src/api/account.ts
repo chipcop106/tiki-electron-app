@@ -1,9 +1,12 @@
 import axios from 'axios';
 import instance from './instance';
 
+const DEVICE_ID = 'a85fa6bb-0451-79f8-b244-bf4b8e736654';
+
 export const login = async (params: LoginPayload) => {
   return axios.post('https://tiki.vn/api/v3/tokens', {
     grant_type: 'password',
+    device_id: DEVICE_ID,
     ...params,
   });
 };
@@ -67,4 +70,5 @@ interface LoginPayload {
   id?: string;
   email: string;
   password: string;
+  otp_code?: string;
 }

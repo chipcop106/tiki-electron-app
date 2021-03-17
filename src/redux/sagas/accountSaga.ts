@@ -97,11 +97,26 @@ export function* loginAccount({ payload }) {
 
 export function* addAccount({ payload }) {
   try {
-    const resLogin = yield call(login, {
+    const params = {
       email: payload.username,
       password: payload.password,
-    });
-    if (resLogin.data) {
+      otp_code: payload.otp_code,
+    };
+
+    const resLogin = yield call(login, params);
+    if (
+      resLogin.data.status === 'pending' &&
+      resLogin.data.code === 'otp_required'
+    ) {
+      yield put({
+        type: accountActions.addAccountFailed,
+        payload: {
+          error: `Vui lòng nhập mã OTP đã gửi vào SĐT: ${resLogin.data.phone_number}`,
+        },
+      });
+      return false;
+    }
+    if (resLogin.data.access_token) {
       yield put({
         type: accountActions.addAccountSuccess,
         payload: {
@@ -125,7 +140,9 @@ export function* addAccount({ payload }) {
       yield put({
         type: accountActions.addAccountFailed,
         payload: {
-          error: resLogin.error.message ?? 'Tài khoản hoặc mật khẩu không đúng',
+          error:
+            resLogin?.data?.error?.message ??
+            'Tài khoản hoặc mật khẩu không đúng',
         },
       });
     }
@@ -298,7 +315,7 @@ export function* processBuyProduct({ payload }) {
 }
 
 export function* processBuyCart({ payload }) {
-  const { access_token, method: payment_method, gift } = payload;
+  const { access_token, method: payment_method, gift, id } = payload;
   const cartData = yield call(getCartData, { access_token });
   try {
     const resBuy = yield call(processBuy, {
@@ -312,6 +329,34 @@ export function* processBuyCart({ payload }) {
         ...payload,
       },
     });
+
+    if (cartData.data) {
+      const { items, subtotal } = cartData.data;
+      const newItems = [...items].map((item) => ({
+        id: item.id,
+        subtotal: item.subtotal,
+        price: item.price,
+        product_id: item.product_id,
+        product_name: item.product_name,
+        product_url: item.product_url,
+        qty: item.qty,
+      }));
+      if (newItems) {
+        yield put({
+          type: accountActions.getCartSuccess,
+          payload: {
+            id,
+            cartItems: JSON.stringify(newItems),
+            subTotal: subtotal,
+          },
+        });
+      } else {
+        yield put({
+          type: accountActions.getCartError,
+          payload: 'Lỗi khi lấy dữ liệu cart',
+        });
+      }
+    }
   } catch (error) {
     yield put({
       type: accountActions.checkPriceBuyFailed,

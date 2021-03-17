@@ -49,6 +49,10 @@ export interface AccountType {
     isError: boolean;
     message: string;
   };
+  isOtpAccount?: {
+    isOtp: boolean;
+    phoneNumber?: string;
+  };
 }
 
 export interface AccountID {
@@ -277,6 +281,12 @@ export const accountSlice = createSlice({
       state.addError = {
         isError: true,
         message: payload,
+      };
+    },
+    setOTPAccount: (state, { payload }) => {
+      state.isOtpAccount = {
+        isOtp: payload.isOtp,
+        phoneNumber: payload.phoneNumber,
       };
     },
   },

@@ -19,7 +19,6 @@ export default function Footer() {
         py={2}
         fontSize="xs"
       >
-        `
         <Box>
           <Text>Developer by Dat Coder</Text>
         </Box>
