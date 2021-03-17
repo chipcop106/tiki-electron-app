@@ -148,60 +148,69 @@ const Deals = () => {
   };
 
   const renderListDeals = useMemo(() => {
-    return filterItems.map((item) => (
-      <Tr>
-        <Td>
-          <Image
-            src={item.product.thumbnail_url}
-            width={50}
-            height={50}
-            fit="object-fit"
-          />
-        </Td>
-        <Td>
-          <Link
-            href={`https://tiki.vn/${item.product.url_path}`}
-            target="_blank"
-            rel="noopener"
-            mb={2}
-          >
-            <Text maxW={400} isTruncated>
-              {item.product.name}
-            </Text>
-          </Link>
-        </Td>
-        <Td>
-          <CurrencyFormat
-            value={item.product.price}
-            displayType="text"
-            thousandSeparator
-            renderText={(value) => <Text>{value}</Text>}
-          />
-        </Td>
-        <Td>
-          <CurrencyFormat
-            value={item.special_price}
-            displayType="text"
-            thousandSeparator
-            renderText={(value) => (
-              <Text fontWeight="semibold" color="red.500">
-                {value}
+    return filterItems
+      .sort(
+        (prev, next) =>
+          Math.ceil(next.discount_percent) - Math.ceil(prev.discount_percent)
+      )
+      .map((item) => (
+        <Tr>
+          <Td>
+            <Image
+              src={item.product.thumbnail_url}
+              width={50}
+              height={50}
+              fit="object-fit"
+            />
+          </Td>
+          <Td>
+            <Link
+              href={`https://tiki.vn/${item.product.url_path}`}
+              target="_blank"
+              rel="noopener"
+              mb={2}
+            >
+              <Text maxW={400} isTruncated>
+                {item.product.name}
               </Text>
-            )}
-          />
-        </Td>
-        <Td>{item.discount_percent}</Td>
-        <Td>
-          <Button
-            leftIcon={<IoCartOutline />}
-            onClick={() => buyMultipleAccount(item.product.id)}
-            size="sm"
-          >
-            Mua
-          </Button>
-        </Td>
-      </Tr>
-    ));
+            </Link>
+          </Td>
+          <Td>
+            <CurrencyFormat
+              value={
+                item.deal_status === 'running'
+                  ? item.product.price
+                  : item.product.list_price
+              }
+              displayType="text"
+              thousandSeparator
+              renderText={(value) => <Text>{value}</Text>}
+            />
+          </Td>
+          <Td>
+            <CurrencyFormat
+              value={item.special_price}
+              displayType="text"
+              thousandSeparator
+              renderText={(value) => (
+                <Text fontWeight="semibold" color="red.500">
+                  {value}
+                </Text>
+              )}
+            />
+          </Td>
+          <Td>{item.discount_percent}</Td>
+          <Td>
+            <Button
+              leftIcon={<IoCartOutline />}
+              onClick={() => buyMultipleAccount(item.product.id)}
+              size="sm"
+            >
+              Mua
+            </Button>
+          </Td>
+        </Tr>
+      ));
   }, [filterItems]);
 
   const handleFilterList = () => {
@@ -220,13 +229,7 @@ const Deals = () => {
           Math.ceil(Number(filterPrice) > 0 ? Number(filterPrice) : 0)
       );
     }
-    setFilterItems(
-      dataFilter.sort(
-        (prev, next) =>
-          Math.ceil((next.product.discount * 100) / next.product.list_price) -
-          Math.ceil((prev.product.discount * 100) / prev.product.list_price)
-      )
-    );
+    setFilterItems(dataFilter);
   };
 
   useEffect(() => {
