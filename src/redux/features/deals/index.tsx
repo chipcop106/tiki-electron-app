@@ -172,7 +172,7 @@ const Deals = () => {
         </Td>
         <Td>
           <CurrencyFormat
-            value={item.product.list_price}
+            value={item.product.price}
             displayType="text"
             thousandSeparator
             renderText={(value) => <Text>{value}</Text>}
