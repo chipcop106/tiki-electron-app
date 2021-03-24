@@ -192,6 +192,7 @@ export default class MenuBuilder {
     return [subMenuAbout, subMenuEdit, subMenuView, subMenuWindow, subMenuHelp];
   }
 
+  // eslint-disable-next-line class-methods-use-this
   buildDefaultTemplate() {
     // const templateDefault = [
     //   {
@@ -285,7 +286,7 @@ export default class MenuBuilder {
     //   },
     // ];
 
-    const templateDefault = [];
+    const templateDefault: any[] = [];
 
     return templateDefault;
   }

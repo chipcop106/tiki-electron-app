@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Flex,
   Badge,
@@ -26,7 +26,7 @@ import {
   Tooltip,
 } from '@chakra-ui/react';
 
-import { shallowEqual, useSelector, useDispatch } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { AiOutlineDrag, AiOutlineExpandAlt } from 'react-icons/ai';
 import UserCard from '../../../components/UserCard/UserCard';
 import { actions as AccountActions } from '../account/accountSlice';
@@ -44,68 +44,65 @@ const Dashboard: React.FC = () => {
   const accounts = useSelector((state: RootState) => state.account.accounts);
   const dispatch = useDispatch();
 
-  const _toggleCollapse = (): void => {
+  const toggleCollapse = (): void => {
     if (collapse) {
-      setCollapseItem(accounts.map((value, index: number) => index));
+      setCollapseItem(accounts.map((_account, index) => index) as never[]);
     } else {
       setCollapseItem([]);
     }
     setCollapse(!collapse);
   };
 
-  const handleChangeCollapse = (items: never[]): void => {
-    setCollapseItem(items);
+  const handleChangeCollapse = (expandedIndex: any) => {
+    setCollapseItem(expandedIndex);
   };
 
-  const handleGiftChange = (e) => {
-    setGift(!e.target.checked);
+  const handleGiftChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setGift(!event.target.checked);
   };
 
   const reloginAllAccount = () => {
-    accounts &&
-      accounts.length > 0 &&
-      [...accounts].map((acc) => {
-        dispatch(
-          AccountActions.loginAccount({
-            id: acc.id,
-            username: acc.username,
-            password: acc.password,
-          })
-        );
-      });
+    [...accounts].map((acc) =>
+      dispatch(
+        AccountActions.loginAccount({
+          id: acc.id,
+          username: acc.username,
+          password: acc.password,
+        })
+      )
+    );
   };
 
-  const handleChangeProductId = (e) => {
+  const handleChangeProductId = (e: React.ChangeEvent<HTMLInputElement>) => {
     setProductId(e.target.value);
   };
-  const handleChangeMethod = (e) => {
+  const handleChangeMethod = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setMethod(e.target.value);
   };
   const handleChangeQuantity = (
-    valueAsString: string,
+    _valueAsString: string,
     valueAsNumber: number
-  ) => {
+  ): void => {
     setQuantity(valueAsNumber);
   };
 
-  const buyMultipleAccount = (e) => {
+  const buyMultipleAccount = (
+    e: React.MouseEvent<HTMLButtonElement, MouseEvent>
+  ) => {
     e.preventDefault();
-    accounts &&
-      accounts.length > 0 &&
-      [...accounts]
-        .filter((item) => item.isLogin === true)
-        .map((acc) => {
-          dispatch(
-            AccountActions.processBuyProduct({
-              id: acc.id,
-              access_token: acc.access_token,
-              productId,
-              quantity,
-              payment_method: method,
-              gift,
-            })
-          );
-        });
+    const loggedAccount = [...accounts].filter((item) => item.isLogin);
+    loggedAccount.forEach((acc) => {
+      dispatch(
+        AccountActions.processBuyProduct({
+          id: acc.id,
+          access_token: acc.access_token,
+          productId,
+          quantity,
+          payment_method: method,
+          gift,
+        })
+      );
+    });
   };
 
   return (
@@ -117,7 +114,7 @@ const Dashboard: React.FC = () => {
         <Button
           leftIcon={collapse ? <AiOutlineExpandAlt /> : <AiOutlineDrag />}
           colorScheme="yellow"
-          onClick={_toggleCollapse}
+          onClick={toggleCollapse}
           size="sm"
         >
           {collapse ? 'Mở tất cả tab' : 'Đóng tất cả tab'}
@@ -178,7 +175,7 @@ const Dashboard: React.FC = () => {
                     <Switch
                       id="gift-recieve"
                       onChange={handleGiftChange}
-                      value={gift}
+                      isChecked={gift}
                     />
                   </Tooltip>
                 </FormControl>
@@ -204,9 +201,9 @@ const Dashboard: React.FC = () => {
           allowMultiple
           allowToggle
         >
-          {accounts.map((account, index) => (
+          {accounts.map((account) => (
             <AccordionItem
-              key={`${index}`}
+              key={account.id}
               mb={6}
               borderBottom="1px solid #E2E8F0"
             >
@@ -245,7 +242,7 @@ const Dashboard: React.FC = () => {
                 </Flex>
               </AccordionButton>
               <AccordionPanel pb={4}>
-                <UserCard data={account} />
+                <UserCard account={account} isFastSale={false} />
               </AccordionPanel>
             </AccordionItem>
           ))}

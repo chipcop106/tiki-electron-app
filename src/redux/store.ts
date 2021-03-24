@@ -12,6 +12,7 @@ import {
 
 import createElectronStorage from 'redux-persist-electron-storage';
 import createSagaMiddleware from 'redux-saga';
+import { CombinedState } from 'redux';
 import rootReducer from './features/rootReducer';
 import rootSaga from './sagas/rootSaga';
 
@@ -36,7 +37,9 @@ const middleware = [
   sagaMiddleware,
 ];
 
-const store = configureStore({
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+const store: CombinedState = configureStore({
   reducer: persistedReducer,
   middleware,
 });
@@ -44,5 +47,8 @@ const store = configureStore({
 sagaMiddleware.run(rootSaga);
 
 export const persistor = persistStore(store);
+
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;
 
 export default store;

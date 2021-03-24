@@ -1,12 +1,6 @@
-import {
-  takeEvery,
-  put,
-  takeLatest,
-  select,
-  call,
-  take,
-  delay,
-} from 'redux-saga/effects';
+/* eslint-disable @typescript-eslint/naming-convention */
+import { AnyAction } from 'redux';
+import { takeEvery, put, takeLatest, call, delay } from 'redux-saga/effects';
 import { v4 as uuidv4 } from 'uuid';
 import { createStandaloneToast } from '@chakra-ui/react';
 import { actions as accountActions } from '../features/account/accountSlice';
@@ -16,7 +10,6 @@ import {
   cancelOrder as cancelOrderById,
   getOrderLists,
 } from '../../api/account';
-import { getProductInfo } from '../../api/product';
 
 import {
   getCartData,
@@ -34,38 +27,40 @@ export const processBuy = async (params: {
   access_token: string;
   gift: boolean;
   payment_method: string;
-}) => {
+}): Promise<any> => {
+  let result: any = {};
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   const { access_token, gift, payment_method } = params;
+  try {
+    const userAddress = await getUserAddress({ access_token });
+    await setAddress({
+      access_token,
+      address_id: userAddress.data.data.find(
+        (item: any) => item.is_default === true
+      ).id,
+    });
+    await setPaymentMethod({
+      access_token,
+      payment_method,
+    });
 
-  return new Promise(async (resolve, reject) => {
-    try {
-      const userAddress = await getUserAddress({ access_token });
-      await setAddress({
+    if (gift) {
+      await setGiftNone({
         access_token,
-        address_id: userAddress.data.data.find(
-          (item: any) => item.is_default === true
-        ).id,
       });
-      await setPaymentMethod({
-        access_token,
-        payment_method,
-      });
-
-      if (gift) {
-        await setGiftNone({
-          access_token,
-        });
-      }
-      const resCheckout = await completeCheckOut({
-        access_token,
-        payment_method,
-      });
-      resolve(resCheckout);
-    } catch (e) {}
-  });
+    }
+    const resCheckout = await completeCheckOut({
+      access_token,
+      payment_method,
+    });
+    result = resCheckout;
+  } catch (e) {
+    result = '';
+  }
+  return result;
 };
 
-export function* loginAccount({ payload }) {
+export function* loginAccount({ payload }: AnyAction) {
   try {
     const resLogin = yield call(login, {
       email: payload.username,
@@ -87,6 +82,7 @@ export function* loginAccount({ payload }) {
             isError: false,
             message: '',
           },
+          isChecking: false,
         },
       });
     }
@@ -95,7 +91,8 @@ export function* loginAccount({ payload }) {
   }
 }
 
-export function* addAccount({ payload }) {
+// eslint-disable-next-line consistent-return
+export function* addAccount({ payload }: AnyAction) {
   try {
     const params = {
       email: payload.username,
@@ -114,7 +111,6 @@ export function* addAccount({ payload }) {
           error: `Vui lòng nhập mã OTP đã gửi vào SĐT: ${resLogin.data.phone_number}`,
         },
       });
-      return false;
     }
     if (resLogin.data.access_token) {
       yield put({
@@ -134,6 +130,7 @@ export function* addAccount({ payload }) {
             isError: false,
             message: '',
           },
+          isChecking: false,
         },
       });
     } else {
@@ -158,7 +155,7 @@ export function* addAccount({ payload }) {
   }
 }
 
-export function* updateAccount({ payload }) {
+export function* updateAccount({ payload }: AnyAction) {
   try {
     const resLogin = yield call(login, {
       email: payload.username,
@@ -189,8 +186,7 @@ export function* updateAccount({ payload }) {
   }
 }
 
-export function* processingBuy({ payload }) {
-  console.log('Dispatch processing');
+export function* processingBuy({ payload }: AnyAction) {
   const { access_token, payment_method, gift } = payload;
   const cartData = yield call(getCartData, { access_token });
   const { items } = cartData.data;
@@ -257,7 +253,7 @@ export function* processingBuy({ payload }) {
   }
 }
 
-export function* processBuyProduct({ payload }) {
+export function* processBuyProduct({ payload }: AnyAction) {
   // eslint-disable-next-line @typescript-eslint/naming-convention
   const {
     access_token,
@@ -314,11 +310,11 @@ export function* processBuyProduct({ payload }) {
   }
 }
 
-export function* processBuyCart({ payload }) {
+export function* processBuyCart({ payload }: AnyAction) {
   const { access_token, method: payment_method, gift, id } = payload;
   const cartData = yield call(getCartData, { access_token });
   try {
-    const resBuy = yield call(processBuy, {
+    yield call(processBuy, {
       access_token,
       payment_method,
       gift,
@@ -366,7 +362,7 @@ export function* processBuyCart({ payload }) {
   }
 }
 
-export function* cancelOrder({ payload }) {
+export function* cancelOrder({ payload }: AnyAction) {
   try {
     const res = yield call(cancelOrderById, {
       access_token: payload.access_token,
@@ -405,7 +401,7 @@ export function* cancelOrder({ payload }) {
   }
 }
 
-export function* getCart({ payload }) {
+export function* getCart({ payload }: AnyAction) {
   const { access_token, id } = payload;
   try {
     const cartData = yield call(getCartData, { access_token });
@@ -446,8 +442,8 @@ export function* getCart({ payload }) {
   }
 }
 
-export function* deleteCartItem({ payload }) {
-  const { access_token, id, itemId } = payload;
+export function* deleteCartItem({ payload }: AnyAction) {
+  const { access_token, itemId } = payload;
   try {
     yield delay(1000);
     const res = yield call(deleteCart, { access_token, itemId });
@@ -477,9 +473,9 @@ export function* deleteCartItem({ payload }) {
   }
 }
 
-export function* addCartProduct({ payload }) {
+export function* addCartProduct({ payload }: AnyAction) {
   try {
-    const { product_id, quantity, access_token, id } = payload;
+    const { product_id, quantity, access_token } = payload;
     yield call(addToCart, {
       product_id,
       access_token,
@@ -489,7 +485,7 @@ export function* addCartProduct({ payload }) {
     const cartData = yield call(getCartData, { access_token });
 
     const newItem = cartData.data.items.find(
-      (item) => item.product_id.toString() === product_id
+      (item: any) => item.product_id.toString() === product_id
     );
     yield put({
       type: accountActions.addCartProductSuccess,
@@ -515,7 +511,7 @@ export function* addCartProduct({ payload }) {
   }
 }
 
-export function* getOrders({ payload }) {
+export function* getOrders({ payload }: AnyAction) {
   const { id, access_token, username } = payload;
   try {
     const res = yield call(getOrderLists, { access_token, page: 1, limit: 5 });

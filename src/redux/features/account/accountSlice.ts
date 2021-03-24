@@ -1,27 +1,16 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-interface History {
-  id: string;
-  nameProduct: string;
-  productId: string | number;
-  link: string;
-  quantity: number;
-  status: boolean;
-  error: string | null;
-  orderId: string | number | null;
-}
-
-interface Account {
+export interface Account {
   id: string;
   username: string;
   password: string;
   access_token: string;
   refresh_token: string;
   token_type: string;
-  expires_in: number;
-  expires_at: number;
+  expires_in: number | null;
+  expires_at: number | null;
   customer_id: string | number;
-  histories: Array<History>;
+  histories: any[];
   isLogin: boolean;
   isProcessing: boolean;
   cart: {
@@ -32,6 +21,7 @@ interface Account {
     isError: boolean;
     message: string;
   };
+  isChecking: boolean;
 }
 
 export interface AccountType {
@@ -83,7 +73,7 @@ export const accountSlice = createSlice({
     closeModalAccount: (state) => {
       state.openModal = false;
     },
-    addAccount: (state, { payload }) => {
+    addAccount: (state) => {
       state.loading = true;
       state.error = null;
     },
@@ -101,7 +91,7 @@ export const accountSlice = createSlice({
         (account) => account.id !== payload
       );
     },
-    updateAccount: (state, { payload }) => {
+    updateAccount: (state) => {
       state.loading = true;
       state.error = null;
     },
@@ -118,7 +108,7 @@ export const accountSlice = createSlice({
       state.error = payload.error;
       state.loading = false;
     },
-    loginAccount: (state, { payload }) => {},
+    loginAccount: (_state, _action) => {},
     loginAccountSuccess: (state, { payload }) => {
       const index = state.accounts.findIndex((acc) => acc.id === payload.id);
       if (index > -1) {
@@ -129,19 +119,15 @@ export const accountSlice = createSlice({
       }
     },
     setExpiredToken: (state, { payload }) => {
-      state.accounts = [...state.accounts].map((account: Account) => {
-        if (account.id === payload) {
-          return {
-            ...account,
-            isLogin: false,
-            access_token: '',
-            expires_at: null,
-          };
-        }
-        return account;
-      });
+      const index = state.accounts.findIndex((acc) => acc.id === payload.id);
+      state.accounts[index] = {
+        ...state.accounts[index],
+        isLogin: false,
+        access_token: '',
+        expires_at: null,
+      };
     },
-    getCart: (state, { payload }) => {
+    getCart: (state, _action) => {
       state.cartLoading = true;
       state.error = null;
     },
@@ -156,7 +142,7 @@ export const accountSlice = createSlice({
       state.error = payload;
       state.cartLoading = false;
     },
-    deleteCartItem: (state, { payload }) => {
+    deleteCartItem: (state, _action) => {
       state.cartError = null;
     },
     deleteCartItemSuccess: (state, { payload }) => {
@@ -188,7 +174,7 @@ export const accountSlice = createSlice({
         state.accounts[index].isProcessing = true;
       }
     },
-    processingBuy: (state, { payload }) => {
+    processingBuy: (_state) => {
       console.log('process buy nè');
     },
     processBuySuccess: (state, { payload }) => {
@@ -209,14 +195,14 @@ export const accountSlice = createSlice({
         state.accounts[index].isProcessing = false;
       }
     },
-    cancelProcessBuy: (state, { payload }) => {},
+    cancelProcessBuy: (_state) => {},
     deleteHistories: (state, { payload }) => {
       const index = state.accounts.findIndex((acc) => acc.id === payload);
       if (index > -1) {
         // state.accounts[index].histories = [];
       }
     },
-    cancelOrder: (state, { payload }) => {},
+    cancelOrder: (_state, _action) => {},
     cancelOrderSuccess: (state, { payload }) => {
       const index = state.accounts.findIndex((acc) => acc.id === payload.id);
       const historyIndex = state.accounts[index].histories.findIndex(
@@ -226,12 +212,10 @@ export const accountSlice = createSlice({
         state.accounts[index].histories[historyIndex].status = false;
       }
     },
-    getOrders: (state, { payload }) => {},
+    getOrders: (_state, _action) => {},
     getOrdersSuccess: (state, { payload }) => {
       const { accountId, histories } = payload;
       const index = state.accounts.findIndex((acc) => acc.id === accountId);
-      console.log({ histories });
-      console.log(state.accounts[index]);
       if (index > -1) {
         state.accounts[index].histories = histories;
       }
@@ -258,7 +242,7 @@ export const accountSlice = createSlice({
         state.accounts[index].buyError.message = payload;
       }
     },
-    addCartProduct: (state, { payload }) => {
+    addCartProduct: (state, _action) => {
       state.isAdding = true;
       state.addError = {
         isError: false,
@@ -270,10 +254,8 @@ export const accountSlice = createSlice({
       const item = JSON.parse(payload.item);
       if (index > -1) {
         state.accounts[index].cart.cartItems.push(item);
-        state.accounts[index].cart.subTotal =
-          state.accounts[index].cart.subTotal + item.subtotal;
+        state.accounts[index].cart.subTotal += item.subtotal;
       }
-
       state.isAdding = false;
     },
     addCartProductFailed: (state, { payload }) => {
@@ -288,6 +270,10 @@ export const accountSlice = createSlice({
         isOtp: payload.isOtp,
         phoneNumber: payload.phoneNumber,
       };
+    },
+    toggleChecking: (state, { payload }) => {
+      const index = state.accounts.findIndex((acc) => acc.id === payload.id);
+      state.accounts[index].isChecking = payload.isChecking;
     },
   },
 });

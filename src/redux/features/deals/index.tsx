@@ -8,15 +8,10 @@ import {
   Thead,
   Tr,
   Text,
-  Select,
   Flex,
   Image,
-  InputGroup,
-  InputRightElement,
   Input,
-  InputLeftElement,
   FormControl,
-  FormHelperText,
   FormLabel,
   Box,
   useToast,
@@ -27,7 +22,7 @@ import {
   HStack,
   useRadioGroup,
 } from '@chakra-ui/react';
-import React, { useCallback, useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { IoCartOutline } from 'react-icons/io5';
 import CurrencyFormat from 'react-currency-format';
@@ -38,12 +33,12 @@ import { RootState } from '../rootReducer';
 import RadioCard from '../../../components/RadioCard';
 
 const Deals = () => {
-  const [tagId, setTagId] = useState('1');
-  const [timeId, setTimeId] = useState('1');
-  const [filterFields, setFilterFields] = useState(null);
-  const [deals, setDeals] = useState([]);
+  const [tagId, setTagId] = useState<string | number>('1');
+  const [timeId, setTimeId] = useState<string | number>('1');
+  const [filterFields, setFilterFields] = useState<any>(null);
+  const [deals, setDeals] = useState<any[]>([]);
   const [filterPrice, setFilterPrice] = useState(0);
-  const [filterItems, setFilterItems] = useState([]);
+  const [filterItems, setFilterItems] = useState<any[]>([]);
   const [totalPage, setTotalPage] = useState(1);
   const [loading, setIsloading] = useState(false);
   const [isCustomDeal, setIsCustomDeal] = useState('0');
@@ -60,7 +55,7 @@ const Deals = () => {
   } = useRadioGroup({
     name: 'tags',
     defaultValue: '',
-    onChange: setTagId,
+    onChange: (nextvalue: string | number) => setTagId(nextvalue),
   });
   const {
     getRootProps: getTimeRoot,
@@ -68,22 +63,18 @@ const Deals = () => {
   } = useRadioGroup({
     name: 'tags',
     defaultValue: '1',
-    onChange: setTimeId,
+    onChange: (nextvalue: string | number) => setTimeId(nextvalue),
   });
 
   const tagGroup = getTagRoot();
   const timeGroup = getTimeRoot();
 
-  const getDealAPI = async (page) => {
-    const params = {};
+  const getDealAPI = async (page: number): Promise<any[]> => {
+    let result = [];
     const url =
       isCustomDeal === '1'
         ? apiUrl
         : 'https://tiki.vn/api/v2/widget/deals/collection';
-    // const urlSearch = new URLSearchParams(url.replace(/^[^_]+(?=\?)/gm, ''));
-    // urlSearch.forEach((value, key) => {
-    //   params[key] = value;
-    // });
     try {
       const res = await instance.get(url, {
         params: {
@@ -97,31 +88,32 @@ const Deals = () => {
           res.data.paging.last_page > 0 ? res.data.paging.last_page : 1
         );
         setFilterFields(res.data.filters);
-        return res.data.data;
+        result = res.data.data;
       }
     } catch (e) {
       console.log(e);
-      return [];
+      result = [];
     }
+    return result;
   };
 
-  const buyMultipleAccount = (productId) => {
-    accounts &&
-      accounts.length > 0 &&
-      [...accounts]
-        .filter((item) => item.isLogin === true)
-        .map((acc) => {
-          dispatch(
-            AccountActions.processBuyProduct({
-              id: acc.id,
-              access_token: acc.access_token,
-              productId,
-              quantity: 1,
-              payment_method: 'cod',
-              gift: false,
-            })
-          );
-        });
+  const buyMultipleAccount = (productId: number) => {
+    const loggedAccounts = [...accounts].filter(
+      (item) => item.isLogin === true
+    );
+
+    loggedAccounts.forEach((acc) => {
+      dispatch(
+        AccountActions.processBuyProduct({
+          id: acc.id,
+          access_token: acc.access_token,
+          productId,
+          quantity: 1,
+          payment_method: 'cod',
+          gift: false,
+        })
+      );
+    });
     toast({
       description: 'Mua hàng hoàn tất',
       status: 'success',
@@ -130,21 +122,22 @@ const Deals = () => {
     });
   };
 
-  const _reloadDeal = async () => {
-    let totalDeals = [];
+  const reloadDeal = async () => {
+    let totalDeals: any[] = [];
     let page = 1;
     setIsloading(true);
     while (page <= totalPage) {
+      // eslint-disable-next-line no-await-in-loop
       const data = await getDealAPI(page);
       totalDeals = [...totalDeals, ...data];
-      page++;
+      page += 1;
     }
-    setDeals(totalDeals);
+    setDeals(totalDeals as any);
     setIsloading(false);
   };
 
-  const _handlePercentChange = (e) => {
-    setFilterPrice(e.target.value);
+  const handlePercentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilterPrice(parseInt(e.target.value, 10));
   };
 
   const renderListDeals = useMemo(() => {
@@ -154,13 +147,13 @@ const Deals = () => {
           Math.ceil(next.discount_percent) - Math.ceil(prev.discount_percent)
       )
       .map((item) => (
-        <Tr>
+        <Tr key={`${item.product.id}`}>
           <Td>
             <Image
               src={item.product.thumbnail_url}
               width={50}
               height={50}
-              fit="object-fit"
+              fit="cover"
             />
           </Td>
           <Td>
@@ -177,6 +170,14 @@ const Deals = () => {
           </Td>
           <Td>
             <CurrencyFormat
+              value={item.progress.qty}
+              displayType="text"
+              thousandSeparator
+              renderText={(value: string | number) => <Text>{value}</Text>}
+            />
+          </Td>
+          <Td>
+            <CurrencyFormat
               value={
                 item.deal_status === 'running'
                   ? item.product.price
@@ -184,7 +185,7 @@ const Deals = () => {
               }
               displayType="text"
               thousandSeparator
-              renderText={(value) => <Text>{value}</Text>}
+              renderText={(value: string | number) => <Text>{value}</Text>}
             />
           </Td>
           <Td>
@@ -192,7 +193,7 @@ const Deals = () => {
               value={item.special_price}
               displayType="text"
               thousandSeparator
-              renderText={(value) => (
+              renderText={(value: string | number) => (
                 <Text fontWeight="semibold" color="red.500">
                   {value}
                 </Text>
@@ -220,7 +221,7 @@ const Deals = () => {
         (item) =>
           item.discount_percent >=
             Math.ceil(Number(filterPrice) > 0 ? Number(filterPrice) : 0) &&
-          item.special_price === parseInt(salePrice)
+          item.special_price === salePrice
       );
     } else {
       dataFilter = deals.filter(
@@ -233,7 +234,7 @@ const Deals = () => {
   };
 
   useEffect(() => {
-    _reloadDeal();
+    reloadDeal();
   }, []);
 
   useEffect(() => {
@@ -242,7 +243,10 @@ const Deals = () => {
 
   return (
     <>
-      <RadioGroup value={isCustomDeal} onChange={setIsCustomDeal}>
+      <RadioGroup
+        value={isCustomDeal}
+        onChange={(nextValue: string) => setIsCustomDeal(nextValue)}
+      >
         <Stack spacing={4} direction="row">
           <Radio value="0">Hot deal</Radio>
           <Radio value="1">Custom deal</Radio>
@@ -260,17 +264,21 @@ const Deals = () => {
         </FormControl>
       )}
 
-      {filterFields && !!filterFields.tags && (
+      {!!filterFields && !!filterFields.tags && (
         <HStack
           spacing={4}
           direction="row"
+          /* eslint-disable-next-line react/jsx-props-no-spreading */
           {...tagGroup}
           my={4}
           alignItems="stretch"
         >
-          {filterFields.tags.values.map((tag) => {
+          {filterFields.tags.values.map((tag: any) => {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
             const radio = getTagRadio({ value: tag.query_value });
             return (
+              /* eslint-disable-next-line react/jsx-props-no-spreading */
               <RadioCard key={tag.query_value} {...radio}>
                 <Text fontSize="sm">{tag.name}</Text>
               </RadioCard>
@@ -283,13 +291,17 @@ const Deals = () => {
         <HStack
           spacing={4}
           direction="row"
+          /* eslint-disable-next-line react/jsx-props-no-spreading */
           {...timeGroup}
           alignItems="stretch"
           my={4}
         >
-          {filterFields.times.values.map((tag) => {
+          {filterFields.times.values.map((tag: any) => {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
             const radio = getTimeRadio({ value: tag.query_value });
             return (
+              /* eslint-disable-next-line react/jsx-props-no-spreading */
               <RadioCard key={tag.query_value} {...radio}>
                 <Text fontSize="sm">{tag.display}</Text>
               </RadioCard>
@@ -314,7 +326,7 @@ const Deals = () => {
         <Box mt={4}>
           <Button
             colorScheme="blue"
-            onClick={_reloadDeal}
+            onClick={reloadDeal}
             size="md"
             isLoading={loading}
             loadingText="Đang cập nhật"
@@ -327,7 +339,7 @@ const Deals = () => {
             <FormLabel>Giảm lớn hơn</FormLabel>
             <Input
               placeholder="0%"
-              onChange={_handlePercentChange}
+              onChange={handlePercentChange}
               width={125}
             />
           </FormControl>
@@ -335,7 +347,7 @@ const Deals = () => {
             <FormLabel>Giá chính xác</FormLabel>
             <Input
               placeholder="0%"
-              onChange={(e) => setSalePrice(e.target.value)}
+              onChange={(e) => setSalePrice(parseInt(e.target.value, 10))}
               width={125}
               value={salePrice}
             />
@@ -366,6 +378,7 @@ const Deals = () => {
           <Tr>
             <Th>Image</Th>
             <Th>Product name</Th>
+            <Th>SL sale</Th>
             <Th>Giá gốc</Th>
             <Th>Giá sale</Th>
             <Th>% sale</Th>

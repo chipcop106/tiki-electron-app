@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Flex,
   Badge,
@@ -19,63 +19,50 @@ import {
   NumberInputStepper,
   NumberIncrementStepper,
   NumberDecrementStepper,
-  Select,
-  FormControl,
-  Switch,
-  FormLabel,
-  Tooltip,
   Divider,
   useToast,
 } from '@chakra-ui/react';
 
-import { shallowEqual, useSelector, useDispatch } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { AiOutlineDrag, AiOutlineExpandAlt } from 'react-icons/ai';
+import { ExpandedIndex } from '@chakra-ui/accordion';
 import UserCard from '../../../components/UserCard/UserCard';
-import { actions, actions as AccountActions } from '../account/accountSlice';
+import { actions as AccountActions } from '../account/accountSlice';
 import { RootState } from '../rootReducer';
 import TokenRemain from '../../../components/TokenRemain';
-import { getTimeRemain } from '../../../utils';
 
 const FastSale: React.FC = () => {
   const [collapse, setCollapse] = useState(true);
-  const [collapseItem, setCollapseItem] = useState([]);
+  const [collapseItem, setCollapseItem] = useState<ExpandedIndex>([]);
   const [productId, setProductId] = useState('');
   const [quantity, setQuantity] = useState(1);
-  const [method, setMethod] = useState('cod');
-  const [gift, setGift] = useState(false);
   const accounts = useSelector((state: RootState) => state.account.accounts);
   const dispatch = useDispatch();
   const toast = useToast();
 
-  const _toggleCollapse = (): void => {
+  const toggleCollapse = (): void => {
     if (collapse) {
-      setCollapseItem(accounts.map((value, index: number) => index));
+      setCollapseItem(accounts.map((_value, index: number) => index));
     } else {
       setCollapseItem([]);
     }
     setCollapse(!collapse);
   };
 
-  const handleChangeCollapse = (items: never[]): void => {
+  const handleChangeCollapse = (items: ExpandedIndex): void => {
     setCollapseItem(items);
   };
 
-  const handleGiftChange = (e) => {
-    setGift(!e.target.checked);
-  };
-
   const reloginAllAccount = () => {
-    accounts &&
-      accounts.length > 0 &&
-      [...accounts].map((acc) => {
-        dispatch(
-          AccountActions.loginAccount({
-            id: acc.id,
-            username: acc.username,
-            password: acc.password,
-          })
-        );
-      });
+    accounts.forEach((acc) => {
+      dispatch(
+        AccountActions.loginAccount({
+          id: acc.id,
+          username: acc.username,
+          password: acc.password,
+        })
+      );
+    });
     toast({
       description: 'Login all success !',
       status: 'success',
@@ -84,35 +71,33 @@ const FastSale: React.FC = () => {
     });
   };
 
-  const handleChangeProductId = (e) => {
+  const handleChangeProductId = (e: React.ChangeEvent<HTMLInputElement>) => {
     setProductId(e.target.value);
   };
-  const handleChangeMethod = (e) => {
-    setMethod(e.target.value);
-  };
+
   const handleChangeQuantity = (
-    valueAsString: string,
+    _valueAsString: string,
     valueAsNumber: number
   ) => {
     setQuantity(valueAsNumber);
   };
 
-  const addCartMultipleAccount = (e) => {
+  const addCartMultipleAccount = (
+    e: React.MouseEvent<HTMLButtonElement, MouseEvent>
+  ) => {
     e.preventDefault();
-    accounts &&
-      accounts.length > 0 &&
-      [...accounts]
-        .filter((item) => item.isLogin === true)
-        .map((acc) => {
-          dispatch(
-            AccountActions.addCartProduct({
-              id: acc.id,
-              access_token: acc.access_token,
-              product_id: productId,
-              quantity,
-            })
-          );
-        });
+    const loggedAccounts = accounts.filter((item) => item.isLogin === true);
+
+    loggedAccounts.forEach((acc) => {
+      dispatch(
+        AccountActions.addCartProduct({
+          id: acc.id,
+          access_token: acc.access_token,
+          product_id: productId,
+          quantity,
+        })
+      );
+    });
     toast({
       description: 'Add cart success all account !',
       status: 'success',
@@ -121,20 +106,19 @@ const FastSale: React.FC = () => {
     });
   };
 
-  const getCartMultipleAccount = (e) => {
+  const getCartMultipleAccount = (
+    e: React.MouseEvent<HTMLButtonElement, MouseEvent>
+  ) => {
     e.preventDefault();
-    accounts &&
-      accounts.length > 0 &&
-      [...accounts]
-        .filter((item) => item.isLogin === true)
-        .map((acc) => {
-          dispatch(
-            AccountActions.getCart({
-              access_token: acc.access_token,
-              id: acc.id,
-            })
-          );
-        });
+    const loggedAccounts = accounts.filter((item) => item.isLogin === true);
+    loggedAccounts.forEach((acc) => {
+      dispatch(
+        AccountActions.getCart({
+          access_token: acc.access_token,
+          id: acc.id,
+        })
+      );
+    });
     toast({
       description: 'Update cart success !',
       status: 'success',
@@ -142,10 +126,6 @@ const FastSale: React.FC = () => {
       isClosable: true,
     });
   };
-
-  useEffect(() => {
-    console.log({ accounts });
-  }, [accounts]);
 
   return (
     <>
@@ -156,7 +136,7 @@ const FastSale: React.FC = () => {
         <Button
           leftIcon={collapse ? <AiOutlineExpandAlt /> : <AiOutlineDrag />}
           colorScheme="yellow"
-          onClick={_toggleCollapse}
+          onClick={toggleCollapse}
           size="sm"
         >
           {collapse ? 'Mở tất cả tab' : 'Đóng tất cả tab'}
@@ -226,9 +206,9 @@ const FastSale: React.FC = () => {
           allowMultiple
           allowToggle
         >
-          {accounts.map((account, index) => (
+          {accounts.map((account) => (
             <AccordionItem
-              key={`${index}`}
+              key={account.id}
               mb={6}
               borderBottom="1px solid #E2E8F0"
             >
@@ -267,7 +247,7 @@ const FastSale: React.FC = () => {
                 </Flex>
               </AccordionButton>
               <AccordionPanel pb={4}>
-                <UserCard data={account} isFastSale />
+                <UserCard account={account} isFastSale />
               </AccordionPanel>
             </AccordionItem>
           ))}

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 import React, { useEffect, useState } from 'react';
 import {
   Box,
@@ -6,7 +7,6 @@ import {
   Badge,
   Heading,
   Button,
-  Input,
   Table,
   Tbody,
   Tr,
@@ -28,31 +28,23 @@ import {
   HStack,
   FormHelperText,
   Tfoot,
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
   useToast,
 } from '@chakra-ui/react';
 import styled from '@emotion/styled';
-import { AiOutlineDelete, AiOutlineFileAdd } from 'react-icons/ai';
-import { shallowEqual, useDispatch, useSelector } from 'react-redux';
+import { AiOutlineDelete } from 'react-icons/ai';
+import { useDispatch } from 'react-redux';
 import { BsClockFill } from 'react-icons/bs';
 import { GiShoppingCart } from 'react-icons/gi';
-import alertify from 'alertifyjs';
 import CurrencyFormat from 'react-currency-format';
 import { IoNewspaperOutline } from 'react-icons/io5';
 import TokenRemain from '../TokenRemain';
-import {
-  actions as AccountActions,
-  actions,
-} from '../../redux/features/account/accountSlice';
-import AccountModal from '../AccountModal';
+import { actions, Account } from '../../redux/features/account/accountSlice';
 import { getCartData } from '../../api/cart';
 
-const alertSettings = {
-  movable: false,
-};
+interface CardProps {
+  account: Account;
+  isFastSale: boolean;
+}
 
 const CardStyle = styled.div`
   p {
@@ -60,8 +52,8 @@ const CardStyle = styled.div`
   }
 `;
 
-const UserCard = ({
-  data: {
+const UserCard = ({ account, isFastSale }: CardProps) => {
+  const {
     id,
     access_token = '',
     expires_at = 0,
@@ -70,19 +62,11 @@ const UserCard = ({
     password,
     histories = [],
     cart = { cartItems: [], subTotal: 0 },
-    buyError = {
-      isError: false,
-      message: '',
-    },
-  },
-  isFastSale = false,
-}) => {
-  const [productId, setProductId] = useState('');
-  const [quantity, setQuantity] = useState(1);
+    isChecking,
+  } = account;
   const [method, setMethod] = useState('cod');
   const [gift, setGift] = useState(false);
   const [priceCheck, setPriceCheck] = useState(0);
-  const [isChecking, setIsChecking] = useState(false);
   const dispatch = useDispatch();
   const toast = useToast();
 
@@ -110,22 +94,16 @@ const UserCard = ({
     );
   };
 
-  const handleCancelOrder = async (orderId) => {
-    await dispatch(actions.cancelOrder({ id, access_token, orderId }));
+  const handleCancelOrder = async (orderId: string) => {
+    dispatch(actions.cancelOrder({ id, access_token, orderId }));
   };
 
-  const handleGiftChange = (e) => {
+  const handleGiftChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setGift(!e.target.checked);
   };
 
-  const handleChangeMethod = (e) => {
+  const handleChangeMethod = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setMethod(e.target.value);
-  };
-  const handleChangeQuantity = (
-    valueAsString: string,
-    valueAsNumber: number
-  ) => {
-    setQuantity(valueAsNumber);
   };
 
   const getCartByAccount = (): void => {
@@ -137,7 +115,7 @@ const UserCard = ({
     );
   };
 
-  const deleteCartItem = (itemId) => {
+  const deleteCartItem = (itemId: string) => {
     dispatch(
       actions.deleteCartItem({
         access_token,
@@ -160,21 +138,17 @@ const UserCard = ({
       })
     );
   };
-  const delay = (ms) => new Promise((res) => setTimeout(res, ms));
-
-  const addItemToCart = () => {};
 
   const deleteAllCart = () => {
-    cart.cartItems.length > 0 &&
-      cart.cartItems.map(async (item) => {
-        dispatch(
-          actions.deleteCartItem({
-            id,
-            itemId: item.id,
-            access_token,
-          })
-        );
-      });
+    cart.cartItems.map(async (item) => {
+      dispatch(
+        actions.deleteCartItem({
+          id,
+          itemId: item.id,
+          access_token,
+        })
+      );
+    });
     toast({
       description: 'Delete completed !',
       status: 'success',
@@ -183,12 +157,17 @@ const UserCard = ({
     });
   };
 
-  const checkPrice = async () => {
-    setIsChecking(!isChecking);
+  const checkPrice = (status: boolean) => {
+    dispatch(
+      actions.toggleChecking({
+        id,
+        isChecking: status,
+      })
+    );
   };
 
   useEffect(() => {
-    let interval = null;
+    let interval: any = null;
     if (isChecking) {
       interval = setInterval(async () => {
         const cartData = await getCartData({
@@ -205,7 +184,7 @@ const UserCard = ({
             })
           );
           clearInterval(interval);
-          setIsChecking(false);
+          checkPrice(false);
         }
       }, 1000);
     } else {
@@ -366,7 +345,11 @@ const UserCard = ({
                           </Td>
                           <Td>
                             <Text isTruncated width={250}>
-                              <a href={item.product_url} target="_blank">
+                              <a
+                                href={item.product_url}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
                                 {item.product_name}
                               </a>
                             </Text>
@@ -459,7 +442,7 @@ const UserCard = ({
                           <Switch
                             id="gift-recieve"
                             onChange={handleGiftChange}
-                            value={gift}
+                            isChecked={gift}
                           />
                         </Tooltip>
                       </FormControl>
@@ -470,7 +453,7 @@ const UserCard = ({
                         min={0}
                         size="sm"
                         value={priceCheck}
-                        onChange={(valueAsString, valueAsNumber) =>
+                        onChange={(_valueAsString, valueAsNumber) =>
                           setPriceCheck(valueAsNumber)
                         }
                       >
@@ -487,7 +470,7 @@ const UserCard = ({
                     <Button
                       colorScheme={isChecking ? 'red' : 'green'}
                       leftIcon={<BsClockFill />}
-                      onClick={checkPrice}
+                      onClick={() => checkPrice(!isChecking)}
                       flexShrink={0}
                       size="sm"
                     >
@@ -516,6 +499,7 @@ const UserCard = ({
                       <Td>{item.description}</Td>
                       <Td>{item.grand_total}</Td>
                       <Td>
+                        {/* eslint-disable-next-line no-nested-ternary */}
                         {item.status === 'canceled' ? (
                           <Badge colorScheme="red">Đã hủy</Badge>
                         ) : item.status === 'cho_in' ? (
